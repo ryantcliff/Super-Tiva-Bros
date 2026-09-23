@@ -28,5 +28,10 @@ void object_set_height(struct object *obj, int height);
 int object_get_height(struct object *obj);
 void object_set_type(struct object *obj, object_type type);
 object_type object_get_type(struct object *obj);
+void object_init(struct object *obj, float x, float y, int width, int height,
+                 object_type type);
+void object_set_position(struct object *obj, float x, float y);
+void object_set_size(struct object *obj, int width, int height);
+void object_move(struct object *obj, float dx, float dy);
 
 #endif
