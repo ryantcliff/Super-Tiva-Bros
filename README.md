@@ -17,9 +17,9 @@ real-time game logic, PCB design, and retro video output in one system.
 ## System architecture
 
 ```text
-Custom NES-style controller
+Custom NES-style controller (TES-CTRL-MK1)
           │
-          │ SN74HC165 serial button data
+          │ AiP74HC165 serial button data
           ▼
 EK-TM4C1294XL LaunchPad
   • game state and rules
@@ -50,8 +50,8 @@ suited to graphics and video output.
 | --- | --- |
 | EK-TM4C1294XL | Main game controller using the TM4C1294NCPDT Cortex-M4F MCU |
 | Raspberry Pi 2 Model B V1.1 | Graphics processor and composite-video source |
-| SN74HC165N | Parallel-in/serial-out register for the eight controller buttons |
-| Custom NES-style controller | Player input using A, B, Start, Select, and a D-pad |
+| AiP74HC165N | Parallel-in/serial-out register for the eight controller buttons |
+| TES-CTRL-MK1 | Player input using A, B, Start, Select, and a D-pad |
 | RCA XL-100 GER685LR | Final CRT display |
 | External RF modulator | Required if the television is used through its coaxial RF input |
 
@@ -61,27 +61,27 @@ Only the television's external inputs will be used.
 
 ## Controller interface
 
-The controller design uses an SN74HC165N to capture eight active-low button
+The controller design uses an AiP74HC165N to capture eight active-low button
 signals and shift them to the Tiva over three GPIO lines:
 
 | TM4C1294XL pin | Controller signal |
 | --- | --- |
-| PQ0 | Clock |
-| PQ1 | Parallel load (`/SH/LD`) |
-| PQ2 | Serial data (`QH`) |
+| PQ0 | Clock (`CP`) |
+| PQ1 | Parallel load (`/PL`) |
+| PQ2 | Serial data (`Q7`) |
 
-The intended controller byte follows the traditional NES ordering:
+The intended controller byte uses the following ordering:
 
 | Bit | Button |
 | ---: | --- |
 | 0 | A |
 | 1 | B |
-| 2 | Select |
-| 3 | Start |
-| 4 | Up |
-| 5 | Down |
-| 6 | Left |
-| 7 | Right |
+| 2 | Start |
+| 3 | Select |
+| 4 | Right |
+| 5 | Left |
+| 6 | Down |
+| 7 | Up |
 
 The optional hardware reader in `src/input.c` is enabled with the
 `INPUT_TM4C1294XL` preprocessor symbol. Hardware debounce has not yet been
