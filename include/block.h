@@ -25,4 +25,19 @@ typedef struct block{
     bool is_permeable;
 } block;
 
+void block_set_type(struct block *b, block_type type);
+block_type block_get_type(struct block *b);
+void block_set_object(struct block *b, struct object *obj);
+struct object *block_get_object(struct block *b);
+void block_set_physics(struct block *b, struct physics *phys);
+struct physics *block_get_physics(struct block *b);
+void block_set_is_permeable(struct block *b, bool is_permeable);
+bool block_get_is_permeable(struct block *b);
+
+/* Components must be non-null, initialized, and outlive the block.
+ * Their configuration is preserved except object type. No memory is allocated. */
+void block_init(struct block *b, block_type type, struct object *obj,
+                struct physics *phys, bool is_permeable);
+void block_update(struct block *b, float delta_time);
+
 #endif
