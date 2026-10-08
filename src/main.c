@@ -22,5 +22,7 @@
 int main(void){
 
 
-
+    for (;;){
+        /* Game updates will be added here. */
+    }
 }

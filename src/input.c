@@ -1,5 +1,16 @@
 #include "input.h"
 
+typedef enum input_type{
+    CONTROLLER_INPUT,
+    KEYBOARD_INPUT
+} input_type;
+
+typedef struct input{
+    input_type type;
+    uint8_t buttons;
+    uint8_t previous_buttons;
+} input;
+
 void input_init(input *state, input_type type){
     state->type = type;
     state->buttons = 0;
@@ -32,6 +43,8 @@ uint32_t input_pressed(const input *state, uint32_t buttons){
 uint32_t input_released(const input *state, uint32_t buttons){
     return state->previous_buttons & ~state->buttons & buttons;
 }
+
+
 
 #ifdef INPUT_TM4C1294XL
 #include <stdbool.h>

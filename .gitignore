@@ -1,5 +1,8 @@
-# Prerequisites
+# Compiler dependency and intermediate files
 *.d
+*.d_raw
+*.crl
+*.pp
 
 # Object files
 *.o
@@ -53,3 +56,58 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# PDFs
+# Existing policy: keep local datasheets/manuals out of Git.
+*.pdf
+
+# CCS generated output and workspace-local state
+/Debug/
+/Release/
+/.launches/
+/.metadata/
+/.settings/org.eclipse.cdt.core.prefs
+# Generated encoding entries for Debug/Release makefiles.
+/.settings/org.eclipse.core.resources.prefs
+/.settings/language.settings.xml
+/.settings/com.ti.ccstudio.system.setup.prefs
+/.ccs/
+/.log/
+/.jxbrowser.userdata/
+/build/
+/out/
+
+# CCS artifacts if a custom build configuration writes outside Debug/Release.
+*_linkInfo.xml
+ccsObjs.opt
+subdir_rules.mk
+subdir_vars.mk
+objects.mk
+sources.mk
+
+# Editor recovery files, local history, and OS metadata.
+/.history/
+/.vscode/ipch/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local environment overrides (retain a shareable example).
+.env
+.env.*
+!.env.example
+
+# Keep .project, .cproject, .ccsproject, targetConfigs/*.ccxml, startup code,
+# and shared .settings preferences available for Git/CCS project import.
+
+# Legacy course reference code; excluded from the CCS build.
+/keypad_project_library.s
+
+# Keep the TI linker command file (the generic rule above ignores *.cmd).
+!/tm4c1294ncpdt.cmd
