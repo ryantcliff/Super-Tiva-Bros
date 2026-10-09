@@ -5,7 +5,7 @@ side-scrolling platform game to custom hardware. An EK-TM4C1294XL LaunchPad
 runs the game simulation and reads a custom NES-style controller, while a
 Raspberry Pi 2 renders the scene for an RCA CRT television.
 
-The project is being developed by **Ryan Antcliff** and **Jesse Maldonado** as
+The project is being developed by **Ryan Antcliff** and **Jesse Maldonado Ramos** as
 part of CSE 479. It combines embedded C, digital hardware, serial communication,
 real-time game logic, PCB design, and retro video output in one system.
 
