@@ -24,15 +24,26 @@ class TivaSpiInput:
         self._spi = None
 
     def __enter__(self):
-        if self._spi_factory is None:
-            import spidev
+        try:
+            if self._spi_factory is None:
+                import spidev
 
-            self._spi_factory = spidev.SpiDev
+                self._spi_factory = spidev.SpiDev
 
-        self._spi = self._spi_factory()
-        self._spi.open(self.bus, self.device)
-        self._spi.max_speed_hz = self.max_speed_hz
-        self._spi.mode = 0
+            self._spi = self._spi_factory()
+            self._spi.open(self.bus, self.device)
+            self._spi.max_speed_hz = self.max_speed_hz
+            self._spi.mode = 0
+        except BaseException:
+            self.running = False
+            if self._spi is not None:
+                try:
+                    self._spi.close()
+                except Exception:
+                    pass
+                self._spi = None
+            raise
+
         return self
 
     def __exit__(self, exception_type, exception, traceback):
