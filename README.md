@@ -117,7 +117,7 @@ python3 -c 'import spidev; print("spidev ready")'
 Copy the current Pi input and graphics files from PowerShell:
 
 ```powershell
-scp .\pi\controller_protocol.py .\pi\tiva_spi_input.py .\pi\spi_controller_test.py .\pi\pygame_move_test.py antonado@stb:~/
+scp .\pi\controller_protocol.py .\pi\ssh_keyboard_input.py .\pi\tiva_spi_input.py .\pi\spi_controller_test.py .\pi\pygame_move_test.py antonado@stb:~/
 scp -r .\pi\assets antonado@stb:~/assets
 ```
 
