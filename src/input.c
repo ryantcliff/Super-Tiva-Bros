@@ -1,15 +1,5 @@
 #include "input.h"
-
-typedef enum input_type{
-    CONTROLLER_INPUT,
-    KEYBOARD_INPUT
-} input_type;
-
-typedef struct input{
-    input_type type;
-    uint8_t buttons;
-    uint8_t previous_buttons;
-} input;
+#include "uart.h"
 
 void input_init(input *state, input_type type){
     state->type = type;
@@ -44,60 +34,53 @@ uint32_t input_released(const input *state, uint32_t buttons){
     return state->previous_buttons & ~state->buttons & buttons;
 }
 
+#define HWREG(address) (*((volatile uint32_t *)(address)))
 
+#define GPIO_PORTE_BASE 0x4005C000u
+#define GPIO_PORTE_DATA(mask) \
+    HWREG(GPIO_PORTE_BASE + ((uint32_t)(mask) << 2))
 
-#ifdef INPUT_TM4C1294XL
-#include <stdbool.h>
-#include "inc/hw_memmap.h"
-#include "driverlib/gpio.h"
-#include "driverlib/sysctl.h"
-
-#define CONTROLLER_CLK GPIO_PIN_0
-#define CONTROLLER_LATCH GPIO_PIN_1
-#define CONTROLLER_DATA GPIO_PIN_2
+#define CONTROLLER_CLK   0x01u
+#define CONTROLLER_LATCH 0x02u
+#define CONTROLLER_DATA  0x04u
 
 static uint32_t controller_delay;
 
+extern void input_controller_gpio_init(void);
+extern void input_controller_delay(uint32_t iterations);
+
 void input_controller_init(uint32_t system_clock_hz){
-    /* SysCtlDelay uses three cycles per iteration. Round up to a 5 us half
+    /* The assembly delay uses three cycles per iteration. Round up to a 5 us half
      * period for a clock no faster than 100 kHz, excluding GPIO overhead. */
     controller_delay = system_clock_hz / 600000u;
     if (system_clock_hz % 600000u != 0 || controller_delay == 0){
         ++controller_delay;
     }
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOQ);
-    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOQ)){
-    }
-
-    /* Preload output levels before enabling the output drivers. */
-    GPIOPinWrite(GPIO_PORTQ_BASE, CONTROLLER_CLK | CONTROLLER_LATCH,
-                 CONTROLLER_LATCH);
-    GPIOPinTypeGPIOOutput(GPIO_PORTQ_BASE, CONTROLLER_CLK | CONTROLLER_LATCH);
-    GPIOPinTypeGPIOInput(GPIO_PORTQ_BASE, CONTROLLER_DATA);
+    input_controller_gpio_init();
 }
 
 uint8_t input_controller_read(void){
     uint8_t buttons = 0;
     uint32_t bit;
 
-    GPIOPinWrite(GPIO_PORTQ_BASE, CONTROLLER_CLK | CONTROLLER_LATCH, 0);
-    SysCtlDelay(controller_delay);
-    GPIOPinWrite(GPIO_PORTQ_BASE, CONTROLLER_LATCH, CONTROLLER_LATCH);
-    SysCtlDelay(controller_delay);
+    GPIO_PORTE_DATA(CONTROLLER_CLK | CONTROLLER_LATCH) = 0u;
+    input_controller_delay(controller_delay);
+    GPIO_PORTE_DATA(CONTROLLER_LATCH) = CONTROLLER_LATCH;
+    input_controller_delay(controller_delay);
 
     for (bit = 1; bit <= 0x80u; bit <<= 1){
         /* H (the A button) is already at QH after loading: sample BEFORE
          * the rising clock edge. Pull-ups make a pressed button read low. */
-        if (GPIOPinRead(GPIO_PORTQ_BASE, CONTROLLER_DATA) == 0){
+        if (GPIO_PORTE_DATA(CONTROLLER_DATA) == 0u){
             buttons |= (uint8_t)bit;
         }
-        GPIOPinWrite(GPIO_PORTQ_BASE, CONTROLLER_CLK, CONTROLLER_CLK);
-        SysCtlDelay(controller_delay);
-        GPIOPinWrite(GPIO_PORTQ_BASE, CONTROLLER_CLK, 0);
-        SysCtlDelay(controller_delay);
+        GPIO_PORTE_DATA(CONTROLLER_CLK) = CONTROLLER_CLK;
+        input_controller_delay(controller_delay);
+        GPIO_PORTE_DATA(CONTROLLER_CLK) = 0u;
+        input_controller_delay(controller_delay);
     }
 
     return buttons;
 }
-#endif
+
