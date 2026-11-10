@@ -1,0 +1,12 @@
+"""Shared active-high controller byte definitions."""
+
+A = 0x01
+B = 0x02
+SELECT = 0x04
+START = 0x08
+UP = 0x10
+DOWN = 0x20
+LEFT = 0x40
+RIGHT = 0x80
+
+NEUTRAL = 0x00
