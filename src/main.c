@@ -14,15 +14,17 @@
 #include "player.h"
 #include "projectile.h"
 #include "render.h"
+#include "spi.h"
 #include "statistics.h"
 #include "timing.h"
-
-
+#include "uart.h"
 
 int main(void){
-
+    uart_init();
+    uart_write_string("Super Tiva Bros ready\r\n");
+    spi_slave_init(INPUT_BUTTON_RIGHT);
 
     for (;;){
-        /* Game updates will be added here. */
+        (void)spi_slave_service(INPUT_BUTTON_RIGHT);
     }
 }
