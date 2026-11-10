@@ -19,6 +19,21 @@
 *.gch
 *.pch
 
+# Python bytecode caches
+__pycache__/
+*.py[cod]
+
+# Python test, analysis, packaging, and virtual-environment state
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+/.venv/
+/venv/
+
 # Libraries
 *.lib
 *.a
@@ -111,3 +126,18 @@ Desktop.ini
 
 # Keep the TI linker command file (the generic rule above ignores *.cmd).
 !/tm4c1294ncpdt.cmd
+
+# VS Code workspace-local configuration
+/.vscode/
+
+# Local coding-agent state and private project context
+/.agents/
+/.codex/
+/.superpowers/
+/.aws/
+/docs/superpowers/
+/super_tiva_bros_codex_context.md
+
+# Local graphics-debug captures (game sprite assets remain tracked)
+/pi/pygame_frame.png
+/pi/x-screen.png

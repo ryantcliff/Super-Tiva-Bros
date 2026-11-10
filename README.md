@@ -66,9 +66,9 @@ signals and shift them to the Tiva over three GPIO lines:
 
 | TM4C1294XL pin | Controller signal |
 | --- | --- |
-| PQ0 | Clock (`CP`) |
-| PQ1 | Parallel load (`/PL`) |
-| PQ2 | Serial data (`Q7`) |
+| PE0 (X9-5) | Clock (`CP`) |
+| PE1 (X9-7) | Parallel load (`/PL`) |
+| PE2 (X9-9) | Serial data (`Q7`) |
 
 The intended controller byte uses the following ordering:
 
@@ -76,16 +76,56 @@ The intended controller byte uses the following ordering:
 | ---: | --- |
 | 0 | A |
 | 1 | B |
-| 2 | Start |
-| 3 | Select |
-| 4 | Right |
-| 5 | Left |
-| 6 | Down |
-| 7 | Up |
+| 2 | Select |
+| 3 | Start |
+| 4 | Up |
+| 5 | Down |
+| 6 | Left |
+| 7 | Right |
 
-The optional hardware reader in `src/input.c` is enabled with the
-`INPUT_TM4C1294XL` preprocessor symbol. Hardware debounce has not yet been
-implemented.
+The hardware reader in `src/input.c` targets the TM4C1294XL directly. Hardware
+debounce has not yet been implemented.
+
+### Temporary SSH keyboard input
+
+The physical controller remains under hardware debugging. Development can
+continue with the Windows laptop keyboard through an interactive SSH session on
+the Raspberry Pi. The dependency-free `pi/ssh_keyboard_input.py` program emits
+the same active-high 8-bit state planned for the controller. This input path has
+been verified on the Raspberry Pi 2, including all eight buttons and release
+transitions back to `0x00`.
+
+From PowerShell in the repository root, copy the program to the Pi:
+
+```powershell
+scp .\pi\ssh_keyboard_input.py antonado@192.168.137.2:~/ssh_keyboard_input.py
+```
+
+Connect over SSH and launch it:
+
+```powershell
+ssh antonado@192.168.137.2
+```
+
+```bash
+python3 ~/ssh_keyboard_input.py
+```
+
+| Laptop key | Button | Mask |
+| --- | --- | ---: |
+| Z | A | `0x01` |
+| X | B | `0x02` |
+| Space | Select | `0x04` |
+| Enter | Start | `0x08` |
+| Up arrow | Up | `0x10` |
+| Down arrow | Down | `0x20` |
+| Left arrow | Left | `0x40` |
+| Right arrow | Right | `0x80` |
+
+Press Q or Ctrl+C to exit. SSH terminals do not provide true key-release
+events, so each key remains active for 200 ms and keyboard-repeat events extend
+that interval. This is suitable for early gameplay and renderer development,
+but simultaneous inputs are less precise than the finished controller.
 
 ## Current implementation
 
@@ -99,13 +139,14 @@ The repository currently includes:
 - Frame timing state with rollover-safe millisecond updates
 - Central game-state ownership and per-frame entity updates
 - Initial SN74HC165 controller-reading code for the EK-TM4C1294XL
+- Verified SSH keyboard input on the Raspberry Pi using the controller protocol
 - CCS Debug and Release configurations for the TM4C1294NCPDT
 - Startup code, interrupt vector table, linker script, and ICDI target
   configuration
 
-The application entry point is currently an idle scaffold. Audio, rendering,
-level content, the complete game loop, and communication with the Pi remain to
-be implemented.
+The application entry point currently runs a UART controller test and reports
+the button mask whenever it changes. Audio, rendering, level content, the
+complete game loop, and communication with the Pi remain to be implemented.
 
 ## Development environment
 
