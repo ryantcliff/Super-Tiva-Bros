@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
-import time
-import pygame
+import argparse
 from pathlib import Path
 
-from ssh_keyboard_input import (
-    SshKeyboardInput,
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    POLL_SECONDS
-)
+try:
+    from .controller_protocol import DOWN, LEFT, RIGHT, UP
+    from .ssh_keyboard_input import SshKeyboardInput
+    from .tiva_spi_input import TivaSpiInput
+except ImportError:
+    from controller_protocol import DOWN, LEFT, RIGHT, UP
+    from ssh_keyboard_input import SshKeyboardInput
+    from tiva_spi_input import TivaSpiInput
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
@@ -19,7 +18,31 @@ SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 240
 MOVE_SPEED = 2
 
-def main() -> int:
+
+def parse_args(arguments=None):
+    parser = argparse.ArgumentParser(
+        description="Run the Super Tiva Bros graphics input test."
+    )
+    parser.add_argument(
+        "--input",
+        choices=("keyboard", "spi"),
+        default="keyboard",
+        dest="input_mode",
+        help="controller input source (default: keyboard)",
+    )
+    return parser.parse_args(arguments)
+
+
+def main(arguments=None) -> int:
+    import pygame
+
+    arguments = parse_args(arguments)
+    input_source = (
+        TivaSpiInput()
+        if arguments.input_mode == "spi"
+        else SshKeyboardInput()
+    )
+
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
@@ -51,13 +74,13 @@ def main() -> int:
     player_y = 112
 
     try:
-        with SshKeyboardInput() as keyboard:
-            while keyboard.running:
+        with input_source as controller:
+            while controller.running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         return 0
 
-                buttons = keyboard.poll()
+                buttons = controller.poll()
 
                 if buttons & UP:
                     player_y -= MOVE_SPEED
