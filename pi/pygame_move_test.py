@@ -14,8 +14,8 @@ except ImportError:
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
-SCREEN_WIDTH = 320
-SCREEN_HEIGHT = 240
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 224
 MOVE_SPEED = 2
 
 
@@ -45,17 +45,26 @@ def main(arguments=None) -> int:
 
     pygame.init()
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     player_frames = [
         pygame.image.load(
-            str(ASSET_DIR / "player_tiva_idle.png")
+            str(ASSET_DIR / "tivo_sprites/0_tivo_small_idle.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "player_tiva_walk_1.png")
+            str(ASSET_DIR / "tivo_sprites/1_tivo_small_right_1.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "player_tiva_walk_2.png")
-        )
+            str(ASSET_DIR / "tivo_sprites/2_tivo_small_right_2.png")
+        ).convert_alpha(),
+        pygame.image.load(
+            str(ASSET_DIR / "tivo_sprites/3_tivo_small_left_1.png")
+        ).convert_alpha(),
+        pygame.image.load(
+            str(ASSET_DIR / "tivo_sprites/4_tivo_small_left_2.png")
+        ).convert_alpha(),
+        pygame.image.load(
+            str(ASSET_DIR / "tivo_sprites/5_tivo_small_jump.png")
+        ).convert_alpha(),
     ]
     player_sprite = player_frames[0]
     player_width, player_height = player_sprite.get_size()
@@ -79,21 +88,31 @@ def main(arguments=None) -> int:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         return 0
-
                 buttons = controller.poll()
 
                 if buttons & UP:
                     player_y -= MOVE_SPEED
+                    player_sprite = player_frames[5]
 
-                if buttons & DOWN:
+                elif buttons & DOWN:
                     player_y += MOVE_SPEED
+                    player_sprite = player_frames[5]
 
-                if buttons & LEFT:
+                elif buttons & LEFT:
                     player_x -= MOVE_SPEED
+                    if player_sprite == player_frames[3]:
+                        player_sprite = player_frames[4]
+                    else:
+                        player_sprite = player_frames[3]
 
-                if buttons & RIGHT:
+                elif buttons & RIGHT:
                     player_x += MOVE_SPEED
-
+                    if player_sprite == player_frames[1]:
+                        player_sprite = player_frames[2]
+                    else:
+                        player_sprite = player_frames[1]
+                else:
+                    player_sprite = player_frames[0]
                 player_x = max(
                     0,
                     min(player_x, SCREEN_WIDTH - player_width),
@@ -111,7 +130,7 @@ def main(arguments=None) -> int:
                 )
 
                 pygame.display.flip()
-                clock.tick(60)
+                clock.tick(30)
     except KeyboardInterrupt:
         return 0
     finally:
