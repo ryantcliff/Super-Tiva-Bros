@@ -85,7 +85,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="keypad_project_library.s|tests|resource|Debug|Release|.git" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests/__pycache__"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -174,7 +173,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="keypad_project_library.s|tests|resource|Debug|Release|.git" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests/__pycache__"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
