@@ -14,8 +14,8 @@ except ImportError:
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
-SCREEN_WIDTH = 320
-SCREEN_HEIGHT = 240
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 224
 MOVE_SPEED = 2
 
 
@@ -45,25 +45,25 @@ def main(arguments=None) -> int:
 
     pygame.init()
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     player_frames = [
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_idle.png")
+            str(ASSET_DIR / "tivo_sprites/0_tivo_small_idle.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_right_1.png")
+            str(ASSET_DIR / "tivo_sprites/1_tivo_small_right_1.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_right_2.png")
+            str(ASSET_DIR / "tivo_sprites/2_tivo_small_right_2.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_left_1.png")
+            str(ASSET_DIR / "tivo_sprites/3_tivo_small_left_1.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_left_2.png")
+            str(ASSET_DIR / "tivo_sprites/4_tivo_small_left_2.png")
         ).convert_alpha(),
         pygame.image.load(
-            str(ASSET_DIR / "tivo_sprites/tivo_jump.png")
+            str(ASSET_DIR / "tivo_sprites/5_tivo_small_jump.png")
         ).convert_alpha(),
     ]
     player_sprite = player_frames[0]
@@ -130,7 +130,7 @@ def main(arguments=None) -> int:
                 )
 
                 pygame.display.flip()
-                clock.tick(60)
+                clock.tick(30)
     except KeyboardInterrupt:
         return 0
     finally:

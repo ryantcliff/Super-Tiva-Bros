@@ -25,6 +25,18 @@ class FakeSpiDevice:
         self.closed = True
 
 
+class ConfigurationFailingSpiDevice(FakeSpiDevice):
+    @property
+    def max_speed_hz(self):
+        return self._max_speed_hz
+
+    @max_speed_hz.setter
+    def max_speed_hz(self, value):
+        self._max_speed_hz = value
+        if value is not None:
+            raise OSError("SPI configuration failed")
+
+
 class TivaSpiInputTests(unittest.TestCase):
     def input_class(self):
         module_spec = importlib.util.find_spec("pi.tiva_spi_input")
@@ -54,6 +66,19 @@ class TivaSpiInputTests(unittest.TestCase):
 
         self.assertEqual(spi.transfers, [[0x00]])
         self.assertEqual(value, 0x40)
+
+    def test_configuration_error_closes_device_and_stops_input(self):
+        tiva_spi_input = self.input_class()
+        spi = ConfigurationFailingSpiDevice()
+        controller = tiva_spi_input(spi_factory=lambda: spi)
+
+        with self.assertRaises(OSError):
+            controller.__enter__()
+
+        self.assertTrue(spi.closed)
+        self.assertFalse(controller.running)
+        with self.assertRaises(RuntimeError):
+            controller.poll()
 
     def test_transfer_error_returns_neutral_and_stops_input(self):
         tiva_spi_input = self.input_class()
