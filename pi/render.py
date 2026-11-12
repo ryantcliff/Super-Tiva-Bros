@@ -7,6 +7,7 @@ ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
 SCREEN_WIDTH = 256
 SCREEN_HEIGHT = 224
+BIG_TIVO_OFFSET = 6
 
 class Sprite:
 	def __init__(self, image_path):
@@ -113,10 +114,13 @@ if __name__ == "__main__":
 		tivo = RenderObject(
 			"tivo_sprites",
 			0,
-			192,
+			208,
 			layer=2
 		)
 		renderer.add_object(tivo)
+		tivo.set_sprite(0 + BIG_TIVO_OFFSET)
+		tivo.y -= tivo.sprites[tivo.current_sprite].image.get_height()
+		renderer.camera.y = 16
 		running = True
 		hit_wall = False
 		while running:
@@ -125,14 +129,14 @@ if __name__ == "__main__":
 					running = False
 			if tivo.x % 2 == 0:
 				if hit_wall == False:
-					tivo.set_sprite(2)
+					tivo.set_sprite(2 + BIG_TIVO_OFFSET)
 				else:
-					tivo.set_sprite(4)
+					tivo.set_sprite(4 + BIG_TIVO_OFFSET)
 			elif tivo.x % 2 != 0:
 				if hit_wall == False:
-					tivo.set_sprite(3)
+					tivo.set_sprite(3 + BIG_TIVO_OFFSET)
 				else:
-					tivo.set_sprite(5)
+					tivo.set_sprite(5 + BIG_TIVO_OFFSET)
 			renderer.draw()
 			renderer.tick(60)
 			if tivo.x + tivo.sprites[tivo.current_sprite].image.get_width() < world.sprites[world.current_sprite].image.get_width() and hit_wall == False:
