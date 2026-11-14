@@ -78,8 +78,6 @@ class Render:
 		self.objects.append(game_object)
 
 	def draw(self):
-		# temp background color
-		self.screen.fill((80, 160, 255))
 		objects = sorted(
 			self.objects,
 			key=lambda obj: obj.layer
@@ -105,17 +103,50 @@ class Render:
 
 if __name__ == "__main__":
 	with Render() as renderer:
+		world = RenderObject(
+			"backgrounds",
+			0,
+			0,
+			layer=1
+		)
+		renderer.add_object(world)
 		tivo = RenderObject(
-			"tivo",
-			100,
-			180,
+			"tivo_sprites",
+			0,
+			208,
 			layer=2
 		)
 		renderer.add_object(tivo)
+		tivo.set_sprite(0 + BIG_TIVO_OFFSET)
+		tivo.y -= tivo.sprites[tivo.current_sprite].image.get_height()
+		renderer.camera.y = 16
 		running = True
+		hit_wall = False
 		while running:
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
+			if tivo.x % 2 == 0:
+				if hit_wall == False:
+					tivo.set_sprite(2 + BIG_TIVO_OFFSET)
+				else:
+					tivo.set_sprite(4 + BIG_TIVO_OFFSET)
+			elif tivo.x % 2 != 0:
+				if hit_wall == False:
+					tivo.set_sprite(3 + BIG_TIVO_OFFSET)
+				else:
+					tivo.set_sprite(5 + BIG_TIVO_OFFSET)
 			renderer.draw()
 			renderer.tick(60)
+			if tivo.x + tivo.sprites[tivo.current_sprite].image.get_width() < world.sprites[world.current_sprite].image.get_width() and hit_wall == False:
+				tivo.x += 1
+				if tivo.x + tivo.sprites[tivo.current_sprite].image.get_width() >= world.sprites[world.current_sprite].image.get_width():
+					hit_wall = True
+			elif tivo.x > 0 and hit_wall == True:
+				tivo.x -= 1
+				if tivo.x <= 0:
+					hit_wall = False
+			if renderer.camera.x <= tivo.x - (SCREEN_WIDTH/1.5) and renderer.camera.x + SCREEN_WIDTH - world.sprites[world.current_sprite].image.get_width() <= 0:
+				renderer.camera.x = tivo.x - (SCREEN_WIDTH/1.5)
+			elif renderer.camera.x >= tivo.x - (SCREEN_WIDTH/4) and tivo.x - (SCREEN_WIDTH/4) >= 0:
+				renderer.camera.x = tivo.x - (SCREEN_WIDTH/4)

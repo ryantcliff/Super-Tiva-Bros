@@ -18,43 +18,44 @@
 #include "statistics.h"
 #include "timing.h"
 #include "uart.h"
+#include "tick.h"
 
-static char hex_digit(uint8_t value){
-    value &= 0x0Fu;
-    if (value < 10u){
-        return (char)('0' + (int)value);
-    }
-    return (char)('A' + (int)value - 10);
-}
+#define GAME_UPDATE_HZ		60u
+#define FIXED_DELTA_TIME	(1.0f/60.0f)
 
-static void print_controller_state(uint8_t buttons){
-    uart_write_string("Controller: 0x");
-    uart_write_char(hex_digit(buttons >> 4));
-    uart_write_char(hex_digit(buttons));
-    uart_write_string("\r\n");
-}
+uint32_t previous_ms;
+uint32_t game_accumulator;
 
-int main(void){
-    uint8_t buttons;
-    uint8_t previous_buttons;
+void main(void){
 
-    uart_init();
-    uart_write_string("Super Tiva Bros ready\r\n");
-    input_controller_init(16000000u);
+	system_clock_init();
+	tick_init();
 
-    buttons = input_controller_read();
-    previous_buttons = buttons;
-    print_controller_state(buttons);
-    spi_slave_init(buttons);
+	previous_ms = tick_millis();
+	game_accumulator = 0u;
 
-    for (;;){
-        buttons = input_controller_read();
+	for(;;){
+		uint32_t current_ms = tick_millis();
+		uint32_t elapsed_time = current_ms - previous_ms;
+		previous_ms = current_ms;
 
-        if (buttons != previous_buttons){
-            print_controller_state(buttons);
-            previous_buttons = buttons;
-        }
+		game_accumulator += elapsed_time * GAME_UPDATE_HZ;
 
-        (void)spi_slave_service(buttons);
-    }
+		while(game_accumulator >= 1000u){
+
+			// read controller
+
+			// update player movement
+
+			// update physics / game
+
+			// update camera
+
+			// build next pi packet
+
+			game_accumulator -= 1000u;
+		}
+		// service pi
+	}
+
 }
