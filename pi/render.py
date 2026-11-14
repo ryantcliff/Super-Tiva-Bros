@@ -7,7 +7,6 @@ ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
 SCREEN_WIDTH = 256
 SCREEN_HEIGHT = 224
-BIG_TIVO_OFFSET = 6
 
 class Sprite:
 	def __init__(self, image_path):
