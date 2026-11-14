@@ -5,8 +5,8 @@ from pathlib import Path
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "sprites"
 
-SCREEN_WIDTH = 320
-SCREEN_HEIGHT = 240
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 224
 
 class Sprite:
 	def __init__(self, image_path):
