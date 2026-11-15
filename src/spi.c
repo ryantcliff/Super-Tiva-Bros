@@ -1,5 +1,6 @@
 #include "spi.h"
 #include "spi_packet_stream.h"
+#include "spi_input_mailbox.h"
 
 #define HWREG(address) (*((volatile uint32_t *)(address)))
 
@@ -54,8 +55,10 @@
 #define SSI2_PRIORITY_2     (0x2u << 21)
 
 static SpiPacketStream packet_stream;
+static SpiInputMailbox input_mailbox;
 
 void spi_slave_init(const uint8_t initial_packet[PROTOCOL_PACKET_SIZE]){
+    spi_input_mailbox_init(&input_mailbox);
     if(spi_packet_stream_init(&packet_stream, initial_packet) == 0u){
         return;
     }
@@ -115,11 +118,24 @@ uint32_t spi_slave_publish(const uint8_t packet[PROTOCOL_PACKET_SIZE]){
     return result;
 }
 
+uint8_t spi_slave_input_read(void){
+    return spi_input_mailbox_buttons(&input_mailbox);
+}
+
+uint32_t spi_slave_input_generation(void){
+    return spi_input_mailbox_generation(&input_mailbox);
+}
+
 void SSI2_Handler(void){
     uint32_t interrupt_status;
     interrupt_status = SSI2_MIS_R;
-    while((SSI2_SR_R & SSI_SR_RNE) != 0u){
-        (void)SSI2_DR_R;
+    while ((SSI2_SR_R & SSI_SR_RNE) != 0u) {
+        uint8_t received_byte = (uint8_t)(SSI2_DR_R & 0xFFu);
+
+        spi_input_mailbox_receive(
+            &input_mailbox,
+            received_byte
+        );
     }
     SSI2_ICR_R = interrupt_status & (SSI_INT_RX_OVERRUN | SSI_INT_RX_TIMEOUT);
     while((SSI2_SR_R & SSI_SR_TNF) != 0u){
