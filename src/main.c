@@ -25,6 +25,14 @@
 #define GAME_UPDATE_HZ		60u
 #define FIXED_DELTA_TIME	(1.0f/60.0f)
 
+#ifndef DEVELOPMENT_SPI_KEYBOARD_INPUT
+#define DEVELOPMENT_SPI_KEYBOARD_INPUT 0
+#endif
+
+#define SPI_INPUT_TIMEOUT_TICKS 6u
+#define PLAYER_MIN_X 0
+#define PLAYER_MAX_X 220
+
 uint32_t previous_ms;
 uint32_t game_accumulator;
 
@@ -35,14 +43,23 @@ void main(void){
 		.player_y = 150,
 		.camera_x = 0,
 		.camera_y = 0,
-		.player_state = PLAYER_WALKING,
+		.player_state = PLAYER_IDLE,
 		.facing_direction = FACING_RIGHT
 	};
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
-	int16_t player_velocity_x = 1;
+	uint8_t buttons = 0u;
+
+	#if DEVELOPMENT_SPI_KEYBOARD_INPUT
+	uint32_t last_spi_input_generation = 0u;
+	uint32_t spi_input_stale_ticks = SPI_INPUT_TIMEOUT_TICKS;
+	#endif
 
 	system_clock_init();
 	tick_init();
+
+	#if !DEVELOPMENT_SPI_KEYBOARD_INPUT
+	input_controller_init(16000000u);
+	#endif
 
 	if(protocol_encode(&snapshot, pi_packet) != PROTOCOL_PACKET_SIZE){
 		while(1){}
@@ -61,22 +78,51 @@ void main(void){
 
 		while(game_accumulator >= 1000u){
 
-			// read controller
+			#if DEVELOPMENT_SPI_KEYBOARD_INPUT
+			{
+			    uint32_t input_generation =
+			        spi_slave_input_generation();
+			
+			    if (input_generation != last_spi_input_generation) {
+			        buttons = spi_slave_input_read();
+			        last_spi_input_generation = input_generation;
+			        spi_input_stale_ticks = 0u;
+			    }
+			    else if (spi_input_stale_ticks < SPI_INPUT_TIMEOUT_TICKS) {
+			        ++spi_input_stale_ticks;
+			    }
+			
+			    if (spi_input_stale_ticks >= SPI_INPUT_TIMEOUT_TICKS) {
+			        buttons = 0u;
+			    }
+			}
+			#else
+			buttons = input_controller_read();
+			#endif			
 
 			// update player movement
-			snapshot.player_x += player_velocity_x;
-			if(snapshot.player_x >= 220){
-				snapshot.player_x = 220;
-				player_velocity_x = -1;
-				snapshot.facing_direction = FACING_LEFT;
+			snapshot.player_state = PLAYER_IDLE;
+
+			if (((buttons & INPUT_BUTTON_LEFT) != 0u) &&
+			    ((buttons & INPUT_BUTTON_RIGHT) == 0u)) {
+			    snapshot.facing_direction = FACING_LEFT;
+				
+			    if (snapshot.player_x > PLAYER_MIN_X) {
+			        --snapshot.player_x;
+			        snapshot.player_state = PLAYER_WALKING;
+			    }
 			}
-			else if(snapshot.player_x <= 0){
-				snapshot.player_x = 0;
-				player_velocity_x = 1;
-				snapshot.facing_direction = FACING_RIGHT;
+			else if (((buttons & INPUT_BUTTON_RIGHT) != 0u) &&
+			         ((buttons & INPUT_BUTTON_LEFT) == 0u)) {
+			    snapshot.facing_direction = FACING_RIGHT;
+					
+			    if (snapshot.player_x < PLAYER_MAX_X) {
+			        ++snapshot.player_x;
+			        snapshot.player_state = PLAYER_WALKING;
+			    }
 			}
 
-			snapshot.player_state = PLAYER_WALKING;
+
 
 			// update physics / game
 

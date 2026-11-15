@@ -30,11 +30,19 @@ class TivaGameStateReader:
 
     def __exit__(self, exception_type, exception, traceback):
         if self._spi is not None:
-            self._spi.close()
-            self._spi = None
+            try:
+                self._spi.xfer2(
+                    [0x00] * PACKET_STRUCT.size
+                )
+            except OSError:
+                pass
+            finally:
+                self._spi.close()
+                self._spi = None
 
-    def poll(self):
+    def poll(self, buttons=0):
         if self._spi is None:
             raise RuntimeError("TivaGameStateReader must be entered before polling")
-        response = self._spi.xfer2([0x00] * PACKET_STRUCT.size)
+        button_byte = buttons & 0xFF
+        response = self._spi.xfer2([button_byte] * PACKET_STRUCT.size)
         return decode_packet(bytes(response))

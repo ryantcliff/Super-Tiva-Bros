@@ -4,10 +4,11 @@ import pygame
 from .render import Render, RenderObject
 from .tiva_game_state import TivaGameStateReader
 from .player_view import select_player_sprite
+from .ssh_keyboard_input import SshKeyboardInput
 
 
 def main() -> int:
-    with TivaGameStateReader() as reader, Render() as renderer:
+    with SshKeyboardInput() as keyboard, TivaGameStateReader() as reader, Render() as renderer:
         world = RenderObject(
             "backgrounds",
             0,
@@ -27,7 +28,7 @@ def main() -> int:
 
         running = True
         try:
-            while running:
+            while running and keyboard.running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
@@ -40,7 +41,10 @@ def main() -> int:
                 if not running:
                     break
 
-                snapshot = reader.poll()
+                buttons = keyboard.poll()
+                if not keyboard.running:
+                    break
+                snapshot = reader.poll(buttons)
 
                 tivo.set_position(
                     snapshot.player_x,
@@ -56,6 +60,8 @@ def main() -> int:
 
         except KeyboardInterrupt:
             pass
+
+    return 0
 
 
 if __name__ == "__main__":

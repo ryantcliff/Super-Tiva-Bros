@@ -9,6 +9,7 @@ class FakeSpiDevice:
     def __init__(self, response):
         self.response = response
         self.transfers = []
+        self.closed = False
 
     def open(self, bus, device):
         pass
@@ -18,7 +19,16 @@ class FakeSpiDevice:
         return self.response
 
     def close(self):
-        pass
+        self.closed = True
+
+
+class NeutralTransferFailingSpiDevice(FakeSpiDevice):
+    def xfer2(self, values):
+        self.transfers.append(values)
+        if len(self.transfers) == 2:
+            raise OSError("neutral transfer failed")
+
+        return self.response
 
 
 class TivaGameStateTests(unittest.TestCase):
@@ -47,7 +57,7 @@ class TivaGameStateTests(unittest.TestCase):
         with reader_class(spi_factory=lambda: spi) as reader:
             snapshot = reader.poll()
 
-        self.assertEqual(spi.transfers, [[0x00] * 13])
+        self.assertEqual(spi.transfers[0], [0x00] * 13)
         self.assertEqual(
             snapshot,
             GameSnapshot(
@@ -61,6 +71,73 @@ class TivaGameStateTests(unittest.TestCase):
             ),
         )
 
+    def test_poll_repeats_button_mask_across_transfer(self):
+        spi = FakeSpiDevice([
+            0xA5, 0x01, 0x07,
+            0x64, 0x00,
+            0x96, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x01,
+        ])
+        reader_class = self.reader_class()
+        with reader_class(spi_factory=lambda: spi) as reader:
+            reader.poll(0x40)
+
+        self.assertEqual(spi.transfers[0], [0x40] * 13)
+
+    def test_poll_masks_buttons_to_one_byte(self):
+        spi = FakeSpiDevice([
+            0xA5, 0x01, 0x07,
+            0x64, 0x00,
+            0x96, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x01,
+        ])
+        reader_class = self.reader_class()
+        with reader_class(spi_factory=lambda: spi) as reader:
+            reader.poll(0x140)
+        self.assertEqual(
+            spi.transfers[0],
+            [0x40] * 13,
+        )
+
+    def test_exit_sends_neutral_before_closing(self):
+        spi = FakeSpiDevice([
+            0xA5, 0x01, 0x07,
+            0x64, 0x00,
+            0x96, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x01,
+        ])
+        reader_class = self.reader_class()
+        with reader_class(spi_factory=lambda: spi) as reader:
+            reader.poll(0x40)
+        self.assertEqual(
+            spi.transfers,
+            [
+                [0x40] * 13,
+                [0x00] * 13,
+            ],
+        )
+        self.assertTrue(spi.closed)
+
+    def test_exit_still_closes_when_neutral_transfer_fails(self):
+        spi = NeutralTransferFailingSpiDevice([
+            0xA5, 0x01, 0x07,
+            0x64, 0x00,
+            0x96, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x01,
+        ])
+        reader_class = self.reader_class()
+        with reader_class(spi_factory=lambda: spi) as reader:
+            reader.poll(0x40)
+        self.assertEqual(spi.transfers[1], [0x00] * 13)
+        self.assertTrue(spi.closed)
 
 if __name__ == "__main__":
     unittest.main()
