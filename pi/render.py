@@ -102,6 +102,9 @@ class Render:
 
 
 if __name__ == "__main__":
+	BIG_TIVO_OFFSET = 0
+	if True:
+		BIG_TIVO_OFFSET = 6
 	with Render() as renderer:
 		world = RenderObject(
 			"backgrounds",
