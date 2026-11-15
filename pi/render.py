@@ -71,7 +71,7 @@ class Render:
 		self.clock = pygame.time.Clock()
 		return self
 
-	def __exit__(self):
+	def __exit__(self, exception_type, exception, traceback):
 		pygame.quit()
 
 	def add_object(self, game_object):
