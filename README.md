@@ -2,49 +2,45 @@
 
 Super Tiva Bros is an embedded systems project that brings a classic
 side-scrolling platform game to custom hardware. An EK-TM4C1294XL LaunchPad
-runs the game simulation and reads a custom NES-style controller, while a
-Raspberry Pi 2 renders the scene for an RCA CRT television.
+runs the game simulation and interfaces with a custom NES-style controller,
+while a Raspberry Pi 2 renders the scene for an RCA CRT television.
 
 The project is being developed by **Ryan Antcliff** and **Jesse Maldonado Ramos** as
 part of CSE 479. It combines embedded C, digital hardware, serial communication,
 real-time game logic, PCB design, and retro video output in one system.
 
-> **Project status:** Active development. The CCS project builds and launches
-> in the debugger, and the core object, physics, collision, camera, timing, and
-> entity-update modules are in place. The Tiva-to-Pi one-byte SPI input path and
-> an initial Pygame sprite renderer are working. The physical controller, full
-> game-state protocol, playable levels, and CRT output remain in progress.
+> **Project status:** Active development. The TM4C1294XL now runs a 60 Hz game
+> loop and publishes versioned 13-byte game snapshots through an
+> interrupt-driven SSI2 slave. A Raspberry Pi 2 polls those snapshots over SPI
+> and renders the player position, facing direction, and walking animation in
+> Pygame. For development, SSH keyboard input travels back to the Tiva during
+> the same full-duplex SPI transfer. The physical controller, gameplay systems,
+> playable levels, composite-video output, and CRT integration remain in
+> progress.
 
 ## System architecture
 
 ```text
-Custom NES-style controller (TES-CTRL-MK1)
-          │
-          │ AiP74HC165 serial button data
-          ▼
-EK-TM4C1294XL LaunchPad
-  • game state and rules
-  • movement and physics
-  • collision detection
-  • controller input
-          │
-          │ controller byte over SPI (verified)
-          │ compact game state over SPI (planned)
-          ▼
-Raspberry Pi 2 Model B V1.1
-  • sprites and tile assets
-  • scene composition
-  • composite video output
-          │
-          ▼
-RCA XL-100 GER685LR CRT television
+Custom NES-style controller                SSH keyboard (temporary)
+         │                                           │
+         │ AiP74HC165 serial data                    │ controller mask
+         ▼                                           ▼
+EK-TM4C1294XL LaunchPad ◄──────── SPI MOSI ─── Raspberry Pi 2
+  • authoritative game state                         • SPI master
+  • 60 Hz movement and rules                         • snapshot decoder
+  • physics and collision                            • Pygame renderer
+         │                                           │
+         └───────── SPI MISO: 13-byte snapshot ──────┘
+                                                     │
+                                                     ▼
+                                       Composite video → RCA CRT
 ```
 
-The Tiva will send state such as entity positions, animation states, camera
-offsets, score, and tile changes. The Pi will construct each video frame rather
-than receiving a full framebuffer from the microcontroller. This keeps the Tiva
-focused on deterministic game behavior and assigns rendering to hardware better
-suited to graphics and video output.
+The Tiva sends compact state rather than a framebuffer. The current snapshot
+contains sequence, player and camera coordinates, player state, and facing
+direction. Future revisions will add visible entities and game events. The Pi
+constructs each video frame, keeping deterministic gameplay on the Tiva while
+assigning graphics and video output to the Pi.
 
 ## Hardware
 
@@ -89,11 +85,11 @@ The intended controller byte uses the following ordering:
 The hardware reader in `src/input.c` targets the TM4C1294XL directly. Hardware
 debounce has not yet been implemented.
 
-### Tiva-to-Pi SPI input
+### Bidirectional Tiva-to-Pi SPI link
 
 The Raspberry Pi is the SPI master and polls the TM4C1294XL SSI2 slave at
-100 kHz using SPI mode 0 and 8-bit transfers. The Tiva preloads its latest
-active-high controller byte so the Pi can read it through `/dev/spidev0.0`.
+100 kHz using SPI mode 0 and 8-bit transfers. Each transaction is 13 bytes and
+uses `/dev/spidev0.0`.
 
 | Raspberry Pi 2 | EK-TM4C1294XL |
 | --- | --- |
@@ -114,38 +110,45 @@ ls -l /dev/spidev0.0
 python3 -c 'import spidev; print("spidev ready")'
 ```
 
-Copy the current Pi input and graphics files from PowerShell:
+The Tiva-to-Pi response has this little-endian layout:
 
-```powershell
-scp .\pi\controller_protocol.py .\pi\ssh_keyboard_input.py .\pi\tiva_spi_input.py .\pi\spi_controller_test.py .\pi\pygame_move_test.py antonado@stb:~/
-scp -r .\pi\assets antonado@stb:~/assets
-```
+| Byte(s) | Field |
+| --- | --- |
+| 0 | Magic (`0xA5`) |
+| 1 | Protocol version (`0x01`) |
+| 2 | Sequence number |
+| 3–4 | Player X (`int16`) |
+| 5–6 | Player Y (`int16`) |
+| 7–8 | Camera X (`int16`) |
+| 9–10 | Camera Y (`int16`) |
+| 11 | Player state |
+| 12 | Facing direction |
 
-Monitor controller bytes without starting the renderer:
+The SSI2 interrupt handler drains incoming bytes, fills the transmit FIFO, and
+publishes complete snapshots only at packet boundaries. Two packet buffers keep
+the Pi from observing a partially updated snapshot.
 
-```bash
-python3 ~/spi_controller_test.py
-```
+During temporary keyboard development, the Pi repeats one active-high
+controller mask across all 13 MOSI bytes. Repetition avoids a second framing
+scheme. The Tiva treats the input as neutral if no new SPI data arrives for six
+game ticks (approximately 100 ms), preventing a disconnected Pi from leaving a
+direction held.
 
-The link has been verified first with a fixed `0x80` response and then with a
-live `0x00` controller state matching the Tiva's UART output. The physical
-TES-CTRL-MK1 is still under hardware debugging, so other live button values are
-not yet considered validated.
+Set `DEVELOPMENT_SPI_KEYBOARD_INPUT` in `src/main.c` to `1` for keyboard-over-SPI
+or `0` for the physical TES-CTRL-MK1 path. Both configurations build in CCS.
 
 ### Temporary SSH keyboard input
 
-The physical controller remains under hardware debugging. Development can
-continue with the Windows laptop keyboard through an interactive SSH session on
-the Raspberry Pi. The dependency-free `pi/ssh_keyboard_input.py` program emits
-the same active-high 8-bit state planned for the controller. This input path has
-been verified on the Raspberry Pi 2, including all eight buttons and release
-transitions back to `0x00`.
+The physical controller remains under hardware debugging. Development continues
+with the Windows laptop keyboard through an interactive SSH session on the Pi.
+`pi/ssh_keyboard_input.py` produces the same active-high controller byte planned
+for the final hardware, and `pi/main.py` forwards it to the Tiva while receiving
+the current game snapshot.
 
-From PowerShell in the repository root, copy the keyboard module and shared
-protocol definitions to the Pi:
+From PowerShell in the repository root, copy the Pi package to an existing clone:
 
 ```powershell
-scp .\pi\controller_protocol.py .\pi\ssh_keyboard_input.py antonado@stb:~/
+scp -r .\pi antonado@stb:~/Super-Tiva-Bros/
 ```
 
 Connect over SSH and launch it:
@@ -155,7 +158,8 @@ ssh antonado@stb
 ```
 
 ```bash
-python3 ~/ssh_keyboard_input.py
+cd ~/Super-Tiva-Bros
+DISPLAY=:0 SDL_VIDEODRIVER=x11 python3 -m pi.main
 ```
 
 | Laptop key | Button | Mask |
@@ -169,29 +173,20 @@ python3 ~/ssh_keyboard_input.py
 | Left arrow | Left | `0x40` |
 | Right arrow | Right | `0x80` |
 
-Press Q or Ctrl+C to exit. SSH terminals do not provide true key-release
-events, so each key remains active for 200 ms and keyboard-repeat events extend
-that interval. This is suitable for early gameplay and renderer development,
-but simultaneous inputs are less precise than the finished controller.
+Press Q, Escape in the Pygame window, or Ctrl+C to exit. A clean shutdown sends
+a final neutral SPI transfer and restores the SSH terminal. SSH terminals do
+not provide true key-release events, so each key remains active for 200 ms and
+keyboard-repeat extends that interval. This is suitable for development but is
+not intended to replace the physical controller.
 
-### Pygame graphics test
+### Pygame renderer
 
-`pi/pygame_move_test.py` displays the Tiva character sprite at a logical
-320x240 resolution and can use either input transport without source changes.
-On the Pi desktop, launch it with the Tiva SPI input:
-
-```bash
-DISPLAY=:0 SDL_VIDEODRIVER=x11 python3 ~/pygame_move_test.py --input spi
-```
-
-Use the temporary SSH keyboard instead with:
-
-```bash
-DISPLAY=:0 SDL_VIDEODRIVER=x11 python3 ~/pygame_move_test.py --input keyboard
-```
-
-Both launch modes have been verified on the Raspberry Pi 2. The SPI mode
-currently remains stationary when the Tiva reports the neutral `0x00` state.
+`pi/main.py` is the current integrated renderer. It displays a 256x224 logical
+scene, places the player at the Tiva-provided world coordinates, applies the
+Tiva camera offset, and selects idle, walking, or jumping artwork from the
+reported state. Walking frames alternate from the snapshot sequence number.
+The live Raspberry Pi/Tiva test has verified horizontal movement, direction
+changes, animation, and clean keyboard exit.
 
 ## Current implementation
 
@@ -205,18 +200,22 @@ The repository currently includes:
 - Frame timing state with rollover-safe millisecond updates
 - Central game-state ownership and per-frame entity updates
 - Initial AiP74HC165N controller-reading code for the EK-TM4C1294XL
-- Direct-register SSI2 slave code publishing the controller byte to the Pi
-- A tested `spidev` input adapter and terminal SPI controller monitor
-- Verified SSH keyboard input on the Raspberry Pi using the controller protocol
-- A Pygame graphics test with Tiva sprite assets and selectable SPI/keyboard input
+- Direct-register, interrupt-driven SSI2 slave code with TX/RX FIFO handling
+- Double-buffered 13-byte snapshot streaming with packet-boundary publication
+- A tested Pi decoder for versioned, signed, little-endian game snapshots
+- Full-duplex temporary keyboard input from the Pi to the Tiva with a
+  fail-neutral timeout
+- A 256x224 Pygame renderer driven by Tiva-owned position and animation state
+- Host-side Python and C tests for protocol encoding/decoding, packet streaming,
+  SPI input handling, keyboard mapping, and sprite selection
 - CCS Debug and Release configurations for the TM4C1294NCPDT
 - Startup code, interrupt vector table, linker script, and ICDI target
   configuration
 
-The application entry point reads the controller, reports button-mask changes
-over UART, and publishes the latest byte through SSI2. Audio, level content, the
-complete game loop, the full Tiva-to-Pi game-state protocol, and CRT output
-remain to be implemented.
+The current application entry point consumes the selected controller source,
+updates horizontal movement at 60 Hz, encodes a game snapshot, and publishes it
+to the Pi. Jumping, gravity, complete collision response, enemies, level
+content, audio, and CRT output remain to be integrated into the live loop.
 
 ## Development environment
 
@@ -224,7 +223,7 @@ remain to be implemented.
 - TI ARM Compiler 20.2.7.LTS
 - TivaWare for C Series 2.2.0.295
 - C99
-- Raspberry Pi OS Legacy (32-bit, Debian Bookworm) with Desktop
+- Raspberry Pi OS (32-bit) with Desktop
 - Python 3, Pygame, and `spidev`
 - KiCad 10 for controller PCB development
 
@@ -249,15 +248,25 @@ Generated Debug and Release output is excluded from version control. The CCS
 project metadata, linker script, startup code, and target configuration are
 tracked so both project partners can import the same project settings.
 
+Run the host-side Python tests from the repository root with:
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py" -v
+```
+
+Current host verification also includes strict C99 tests for protocol encoding,
+packet streaming, and the SPI input mailbox. At the present milestone, all 28
+Python tests and all three C test programs pass.
+
 ## Repository layout
 
 ```text
 Super-Tiva-Bros/
 ├── include/                         Public C interfaces and data types
 ├── src/                             Game and hardware implementation
-├── pi/                              Pi input, graphics tests, and sprite assets
+├── pi/                              Pi SPI transport, renderer, and sprite assets
 ├── targetConfigs/                   CCS target/debug configuration
-├── tests/                           Host-side Python tests
+├── tests/                           Host-side Python and C tests
 ├── tm4c1294ncpdt_startup_ccs.c      Startup code and interrupt vectors
 ├── tm4c1294ncpdt.cmd                TM4C1294 linker memory map
 ├── .ccsproject / .cproject          Shared CCS project configuration
@@ -266,11 +275,14 @@ Super-Tiva-Bros/
 
 ## Roadmap
 
-- Complete the TM4C1294 system clock and controller bring-up
-- Validate all controller buttons and simultaneous button presses on hardware
-- Build the first playable level and complete movement/collision behavior
-- Extend the verified controller byte into a versioned game-state SPI protocol
-- Extend the Raspberry Pi sprite test into a tile and scene renderer over HDMI
+- Finish TES-CTRL-MK1 hardware debugging and replace the temporary SSH keyboard
+  path
+- Add jumping, gravity, and grounded-state handling to the Tiva game loop
+- Integrate collision response and build the first playable level
+- Extend snapshots with visible enemies, items, projectiles, score, and game
+  events
+- Expand the Pi renderer from the current player/background prototype into a
+  tile and scene renderer
 - Move the renderer to composite output and validate it on a safe external input
 - Connect the finished system to the CRT through the appropriate video path
 - Integrate audio, polish gameplay, and document the completed hardware
