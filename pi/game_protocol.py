@@ -8,6 +8,13 @@ PACKET_STRUCT = struct.Struct("<BBBhhhhBB")
 PROTOCOL_MAGIC = 0xA5
 PROTOCOL_VERSION = 0x01
 
+PLAYER_IDLE = 0
+PLAYER_WALKING = 1
+PLAYER_JUMPING = 2
+
+FACING_LEFT = 0
+FACING_RIGHT = 1
+
 @dataclass(frozen=True)
 class GameSnapshot:
     sequence: int

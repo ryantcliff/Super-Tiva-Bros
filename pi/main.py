@@ -3,6 +3,7 @@
 import pygame
 from .render import Render, RenderObject
 from .tiva_game_state import TivaGameStateReader
+from .player_view import select_player_sprite
 
 
 def main() -> int:
@@ -37,6 +38,7 @@ def main() -> int:
                 snapshot.player_x,
                 snapshot.player_y,
             )
+            tivo.set_sprite(select_player_sprite(snapshot))
             renderer.camera.set_position(
                 snapshot.camera_x,
                 snapshot.camera_y
