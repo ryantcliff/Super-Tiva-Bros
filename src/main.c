@@ -35,10 +35,11 @@ void main(void){
 		.player_y = 150,
 		.camera_x = 0,
 		.camera_y = 0,
-		.player_state = PLAYER_IDLE,
-		.facing_direction = FACING_LEFT
+		.player_state = PLAYER_WALKING,
+		.facing_direction = FACING_RIGHT
 	};
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
+	int16_t player_velocity_x = 1;
 
 	system_clock_init();
 	tick_init();
@@ -63,6 +64,19 @@ void main(void){
 			// read controller
 
 			// update player movement
+			snapshot.player_x += player_velocity_x;
+			if(snapshot.player_x >= 220){
+				snapshot.player_x = 220;
+				player_velocity_x = -1;
+				snapshot.facing_direction = FACING_LEFT;
+			}
+			else if(snapshot.player_x <= 0){
+				snapshot.player_x = 0;
+				player_velocity_x = 1;
+				snapshot.facing_direction = FACING_RIGHT;
+			}
+
+			snapshot.player_state = PLAYER_WALKING;
 
 			// update physics / game
 
