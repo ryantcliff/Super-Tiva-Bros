@@ -56,3 +56,7 @@ def main() -> int:
 
         except KeyboardInterrupt:
             pass
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
