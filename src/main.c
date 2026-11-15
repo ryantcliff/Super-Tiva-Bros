@@ -19,6 +19,8 @@
 #include "timing.h"
 #include "uart.h"
 #include "tick.h"
+#include "protocol.h"
+#include "system.h"
 
 #define GAME_UPDATE_HZ		60u
 #define FIXED_DELTA_TIME	(1.0f/60.0f)
@@ -27,9 +29,24 @@ uint32_t previous_ms;
 uint32_t game_accumulator;
 
 void main(void){
+	GameSnapshot snapshot = {
+		.sequence = 0u,
+		.player_x = 100,
+		.player_y = 150,
+		.camera_x = 0,
+		.camera_y = 0,
+		.player_state = PLAYER_IDLE,
+		.facing_direction = FACING_LEFT
+	};
+	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
 
 	system_clock_init();
 	tick_init();
+
+	if(protocol_encode(&snapshot, pi_packet) != PROTOCOL_PACKET_SIZE){
+		while(1){}
+	}
+	spi_slave_init(pi_packet);
 
 	previous_ms = tick_millis();
 	game_accumulator = 0u;
@@ -50,12 +67,14 @@ void main(void){
 			// update physics / game
 
 			// update camera
-
-			// build next pi packet
+		
+			++snapshot.sequence;
+			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){
+				(void)spi_slave_publish(pi_packet);
+			}
 
 			game_accumulator -= 1000u;
 		}
-		// service pi
 	}
 
 }
