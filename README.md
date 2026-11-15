@@ -12,11 +12,13 @@ real-time game logic, PCB design, and retro video output in one system.
 > **Project status:** Active development. The TM4C1294XL now runs a 60 Hz game
 > loop and publishes versioned 13-byte game snapshots through an
 > interrupt-driven SSI2 slave. A Raspberry Pi 2 polls those snapshots over SPI
-> and renders the player position, facing direction, and walking animation in
-> Pygame. For development, SSH keyboard input travels back to the Tiva during
-> the same full-duplex SPI transfer. The physical controller, gameplay systems,
-> playable levels, composite-video output, and CRT integration remain in
-> progress.
+> and renders Tiva-owned player position, facing direction, and idle, walking,
+> and jumping animation in Pygame. The live game loop now includes horizontal
+> movement, gravity, grounded jumping, airborne momentum, and smooth ground
+> deceleration over a temporary flat floor. For development, SSH keyboard input
+> travels back to the Tiva during the same full-duplex SPI transfer. The
+> physical controller, level collision, enemies, composite-video output, and
+> CRT integration remain in progress.
 
 ## System architecture
 
@@ -186,7 +188,8 @@ scene, places the player at the Tiva-provided world coordinates, applies the
 Tiva camera offset, and selects idle, walking, or jumping artwork from the
 reported state. Walking frames alternate from the snapshot sequence number.
 The live Raspberry Pi/Tiva test has verified horizontal movement, direction
-changes, animation, and clean keyboard exit.
+changes, running jumps, jump and walking animation, floor landing, and clean
+keyboard exit.
 
 ## Current implementation
 
@@ -195,6 +198,8 @@ The repository currently includes:
 - Reusable object and entity models for players, enemies, blocks, items,
   projectiles, interactables, and levels
 - Semi-implicit Euler integration for velocity, acceleration, and position
+- Tiva-owned player physics with gravity, grounded jumping, airborne momentum,
+  and smooth deceleration after landing
 - Axis-aligned bounding-box collision checks
 - Camera following, visibility checks, and world/screen coordinate conversion
 - Frame timing state with rollover-safe millisecond updates
@@ -207,15 +212,17 @@ The repository currently includes:
   fail-neutral timeout
 - A 256x224 Pygame renderer driven by Tiva-owned position and animation state
 - Host-side Python and C tests for protocol encoding/decoding, packet streaming,
-  SPI input handling, keyboard mapping, and sprite selection
+  SPI input handling, input edges, player physics, keyboard mapping, and sprite
+  selection
 - CCS Debug and Release configurations for the TM4C1294NCPDT
 - Startup code, interrupt vector table, linker script, and ICDI target
   configuration
 
 The current application entry point consumes the selected controller source,
-updates horizontal movement at 60 Hz, encodes a game snapshot, and publishes it
-to the Pi. Jumping, gravity, complete collision response, enemies, level
-content, audio, and CRT output remain to be integrated into the live loop.
+updates horizontal and vertical player physics at 60 Hz, resolves a temporary
+flat floor, encodes a game snapshot, and publishes it to the Pi. Complete
+block/platform collision response, enemies, level content, audio, and CRT
+output remain to be integrated into the live loop.
 
 ## Development environment
 
@@ -255,8 +262,9 @@ python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 Current host verification also includes strict C99 tests for protocol encoding,
-packet streaming, and the SPI input mailbox. At the present milestone, all 28
-Python tests and all three C test programs pass.
+packet streaming, the SPI input mailbox, input state transitions, and player
+physics. At the present milestone, all 28 Python tests and all five C test
+programs pass.
 
 ## Repository layout
 
@@ -277,7 +285,6 @@ Super-Tiva-Bros/
 
 - Finish TES-CTRL-MK1 hardware debugging and replace the temporary SSH keyboard
   path
-- Add jumping, gravity, and grounded-state handling to the Tiva game loop
 - Integrate collision response and build the first playable level
 - Extend snapshots with visible enemies, items, projectiles, score, and game
   events
