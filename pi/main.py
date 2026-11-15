@@ -26,28 +26,33 @@ def main() -> int:
         renderer.add_object(tivo)
 
         running = True
+        try:
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                    elif (
+                        event.type == pygame.KEYDOWN
+                        and event.key in (pygame.K_ESCAPE, pygame.K_q)
+                    ):
+                        running = False
 
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+                if not running:
+                    break
 
-            snapshot = reader.poll()
+                snapshot = reader.poll()
 
-            tivo.set_position(
-                snapshot.player_x,
-                snapshot.player_y,
-            )
-            tivo.set_sprite(select_player_sprite(snapshot))
-            renderer.camera.set_position(
-                snapshot.camera_x,
-                snapshot.camera_y
-            )
-            renderer.draw()
-            renderer.tick(60)
+                tivo.set_position(
+                    snapshot.player_x,
+                    snapshot.player_y,
+                )
+                tivo.set_sprite(select_player_sprite(snapshot))
+                renderer.camera.set_position(
+                    snapshot.camera_x,
+                    snapshot.camera_y
+                )
+                renderer.draw()
+                renderer.tick(60)
 
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        except KeyboardInterrupt:
+            pass
