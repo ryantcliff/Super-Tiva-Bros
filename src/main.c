@@ -30,8 +30,19 @@
 #endif
 
 #define SPI_INPUT_TIMEOUT_TICKS 6u
-#define PLAYER_MIN_X 0
-#define PLAYER_MAX_X 220
+
+#define PLAYER_START_X	100.0f
+#define PLAYER_FLOOR_Y	192.0f
+#define PLAYER_MIN_X	0.0f
+#define PLAYER_MAX_X	220.0f
+#define PLAYER_WIDTH	16
+#define PLAYER_HEIGHT	16
+
+#define PLAYER_MOVE_SPEED			60.0f
+#define PLAYER_GRAVITY				900.0f
+#define PLAYER_JUMP_SPEED			300.0f
+#define PLAYER_GROUND_DECELERATION 	300.0f
+
 
 uint32_t previous_ms;
 uint32_t game_accumulator;
@@ -40,12 +51,17 @@ void main(void){
 	GameSnapshot snapshot = {
 		.sequence = 0u,
 		.player_x = 100,
-		.player_y = 150,
+		.player_y = 192,
 		.camera_x = 0,
 		.camera_y = 0,
 		.player_state = PLAYER_IDLE,
 		.facing_direction = FACING_RIGHT
 	};
+	object player_object;
+	physics player_physics;
+	player_stats player_statistics;
+	player player_entity;
+	input controls;
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
 	uint8_t buttons = 0u;
 
@@ -59,6 +75,36 @@ void main(void){
 
 	#if !DEVELOPMENT_SPI_KEYBOARD_INPUT
 	input_controller_init(16000000u);
+	#endif
+
+	object_init(
+		&player_object,
+		PLAYER_START_X,
+		PLAYER_FLOOR_Y,
+		PLAYER_WIDTH,
+		PLAYER_HEIGHT,
+		OBJECT_TYPE_PLAYER
+	);
+	physics_init(
+		&player_physics,
+		0.0f,
+		0.0f,
+		0.0f,
+		PLAYER_GRAVITY,
+		0.0f
+	);
+	player_init(
+		&player_entity,
+		&player_object,
+		&player_physics,
+		&player_statistics
+	);
+	player_resolve_floor(&player_entity, PLAYER_FLOOR_Y);
+
+	#if DEVELOPMENT_SPI_KEYBOARD_INPUT
+	input_init(&controls, KEYBOARD_INPUT);
+	#else
+	input_init(&controls, CONTROLLER_INPUT);
 	#endif
 
 	if(protocol_encode(&snapshot, pi_packet) != PROTOCOL_PACKET_SIZE){
@@ -101,25 +147,65 @@ void main(void){
 			#endif			
 
 			// update player movement
-			snapshot.player_state = PLAYER_IDLE;
+			input_update(&controls, buttons);
 
-			if (((buttons & INPUT_BUTTON_LEFT) != 0u) &&
-			    ((buttons & INPUT_BUTTON_RIGHT) == 0u)) {
-			    snapshot.facing_direction = FACING_LEFT;
-				
-			    if (snapshot.player_x > PLAYER_MIN_X) {
-			        --snapshot.player_x;
-			        snapshot.player_state = PLAYER_WALKING;
-			    }
+			if(input_down(&controls, INPUT_BUTTON_LEFT) != 0){
+				physics_set_velocity_x(&player_physics, -PLAYER_MOVE_SPEED);
+				snapshot.facing_direction = FACING_LEFT;
 			}
-			else if (((buttons & INPUT_BUTTON_RIGHT) != 0u) &&
-			         ((buttons & INPUT_BUTTON_LEFT) == 0u)) {
-			    snapshot.facing_direction = FACING_RIGHT;
-					
-			    if (snapshot.player_x < PLAYER_MAX_X) {
-			        ++snapshot.player_x;
-			        snapshot.player_state = PLAYER_WALKING;
-			    }
+			else if(input_down(&controls, INPUT_BUTTON_RIGHT) != 0u){
+				physics_set_velocity_x(&player_physics, PLAYER_MOVE_SPEED);
+				snapshot.facing_direction = FACING_RIGHT;
+			}
+			else if(
+			    (buttons & (INPUT_BUTTON_LEFT | INPUT_BUTTON_RIGHT)) ==
+			    (INPUT_BUTTON_LEFT | INPUT_BUTTON_RIGHT)
+			){
+			    physics_set_velocity_x(&player_physics, 0.0f);
+			}
+			else if(
+			    player_is_grounded(&player_entity) &&
+			    (input_pressed(&controls, INPUT_BUTTON_A) == 0u)
+			){
+			    player_apply_ground_deceleration(
+			        &player_entity,
+			        PLAYER_GROUND_DECELERATION,
+			        FIXED_DELTA_TIME
+			    );
+			}
+
+			if(input_pressed(&controls, INPUT_BUTTON_A) != 0u){
+				(void)player_try_jump(&player_entity, PLAYER_JUMP_SPEED);
+			}
+
+			player_update(&player_entity, FIXED_DELTA_TIME);
+
+			player_resolve_floor(&player_entity, PLAYER_FLOOR_Y);
+
+			if(player_object.x < PLAYER_MIN_X){
+				player_object.x = PLAYER_MIN_X;
+				if(player_physics.velocity_x < 0.0f){
+					player_physics.velocity_x = 0.0f;
+				}
+			}
+			else if(player_object.x > PLAYER_MAX_X){
+				player_object.x = PLAYER_MAX_X;
+				if(player_physics.velocity_x > 0.0f){
+					player_physics.velocity_x = 0.0f;
+				}
+			}
+
+			snapshot.player_x = (int16_t)player_object.x;
+			snapshot.player_y = (int16_t)player_object.y;
+
+			if(!player_is_grounded(&player_entity)){
+				snapshot.player_state = PLAYER_JUMPING;
+			}
+			else if(player_physics.velocity_x != 0.0f){
+				snapshot.player_state = PLAYER_WALKING;
+			}
+			else{
+				snapshot.player_state = PLAYER_IDLE;
 			}
 
 
