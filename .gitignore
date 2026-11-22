@@ -144,3 +144,6 @@ Desktop.ini
 # Local graphics-debug captures (game sprite assets remain tracked)
 /pi/pygame_frame.png
 /pi/x-screen.png
+
+# TES Hardware
+/Tiva-Entertainment-System-Hardware/
