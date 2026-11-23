@@ -296,18 +296,19 @@ void main(void){
 				}
 			}
 
-			if(
-				active_level->id == LEVEL_ID_START &&
-				player_object.x >= max_player_x &&
+			if(player_object.x >= max_player_x &&
 				input_down(&controls, INPUT_BUTTON_RIGHT) != 0u
 			){
-				(void)game_load_level(
-					LEVEL_ID_SECOND,
-					&active_level,
-					&player_entity,
-					&game_camera,
-					&snapshot
-				);
+				const LevelDefinition *next_level = level_get_next(active_level->id);
+				if(next_level != NULL){
+					(void)game_load_level(
+						next_level->id,
+						&active_level,
+						&player_entity,
+						&game_camera,
+						&snapshot
+					);
+				}
 			}
 
 			snapshot.player_x = (int16_t)player_object.x;

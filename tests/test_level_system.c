@@ -17,6 +17,14 @@ int main(void){
     assert(level->width == 512);
     assert(level->solid_count == 4);
 
+    // test 0: auto level progression
+    const LevelDefinition *next_level = level_get_next(LEVEL_ID_START);
+
+    assert(next_level != NULL);
+    assert(next_level->id == LEVEL_ID_SECOND);
+    assert(level_get_next(LEVEL_ID_SECOND) == NULL);
+    assert(level_get_next((LevelID)255) == NULL);
+
     // test 1: landing on platform
     object_init(&body, 190, 150, 16, 16, OBJECT_TYPE_PLAYER);
     physics_init(&motion, 0, 200, 0, 0, 0);

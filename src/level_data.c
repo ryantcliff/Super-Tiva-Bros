@@ -32,3 +32,16 @@ const LevelDefinition *level_get(LevelID id) {
     }
     return NULL;
 }
+
+const LevelDefinition *level_get_next(LevelID id) {
+   size_t i;
+   for(i = 0; i < ARRAY_COUNT(levels); ++i){
+       if(levels[i].id == id){
+           if(i + 1u < ARRAY_COUNT(levels)){
+               return &levels[i + 1u];
+           }
+           return NULL;
+       }
+   }
+   return NULL;
+}

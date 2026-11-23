@@ -95,7 +95,9 @@ def generate(levels):
         "    float spawn_x;", "    float spawn_y;",
         "    const LevelSolid *solids;", "    size_t solid_count;",
         "} LevelDefinition;", "",
-        "const LevelDefinition *level_get(LevelID id);", "",
+        "const LevelDefinition *level_get(LevelID id);",
+        "const LevelDefinition *level_get_next(LevelID id);",
+        "",
         "#endif", "",
     ]
 
@@ -127,6 +129,21 @@ def generate(levels):
         "    for (i = 0; i < ARRAY_COUNT(levels); ++i) {",
         "        if (levels[i].id == id) {", "            return &levels[i];",
         "        }", "    }", "    return NULL;", "}", "",
+    ]
+    source += [
+        "const LevelDefinition *level_get_next(LevelID id) {",
+        "   size_t i;",
+        "   for(i = 0; i < ARRAY_COUNT(levels); ++i){",
+        "       if(levels[i].id == id){",
+        "           if(i + 1u < ARRAY_COUNT(levels)){",
+        "               return &levels[i + 1u];",
+        "           }",
+        "           return NULL;",
+        "       }",
+        "   }",
+        "   return NULL;",
+        "}",
+        "",
     ]
     return "\n".join(header), "\n".join(source)
 
