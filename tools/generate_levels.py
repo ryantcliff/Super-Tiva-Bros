@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LEVELS_DIR = ROOT / "levels"
 HEADER = ROOT / "include" / "level_data.h"
 SOURCE = ROOT / "src" / "level_data.c"
+ITEM_TYPES_FILE = ROOT / "config" / "item_types.json"
 
 
 def integer(value, field, minimum, maximum):
@@ -22,12 +23,17 @@ def integer(value, field, minimum, maximum):
         raise ValueError(f"{field} must be an integer in [{minimum}, {maximum}]")
     return value
 
+def read_item_types():
+    return json.loads(
+        ITEM_TYPES_FILE.read_text(encoding="utf-8")
+    )["types"]
 
 def read_levels():
     paths = sorted(LEVELS_DIR.glob("*.json"))
     if not paths:
         raise ValueError("No level JSON files in levels/")
 
+    item_types = read_item_types()
     levels = []
     ids = set()
     symbols = set()
@@ -71,8 +77,9 @@ def read_levels():
         if not isinstance(data.get("background"), str) or not data["background"]:
             raise ValueError(f"{path.name}: background folder required")
         integer(data.get("background_frame", 0), f"{path.name}: background frame", 0, 255)
-        goal = data.get("goal")
 
+        # goal validation
+        goal = data.get("goal")
         if goal is not None:
             if not isinstance(goal, dict):
                 raise ValueError(f"{path.name}: goal must be an object")
@@ -93,6 +100,11 @@ def read_levels():
             if gx + gw > width or gy + gh > height:
                 raise ValueError(f"{path.name}: goal extends outside level")
 
+        # Check item types against the shared registry
+        for item in data.get("items", []):
+            if item["type"] not in item_types:
+                raise ValueError(f"Unknown item: {item['type']}")
+
         levels.append(data)
     return sorted(levels, key=lambda item: item["id"])
 
@@ -112,12 +124,25 @@ def generate(levels):
         "    int16_t x;", "    int16_t y;",
         "    uint16_t width;", "    uint16_t height;",
         "} LevelSolid;", "",
+    ]
+    item_types = read_item_types()
+    header += ["typedef enum {"]
+    for name, definition in item_types.items():
+        header.append(f"    ITEM_TYPE_{name.upper()} = {definition['id']},")
+    header += [
+        "} item_type;", "",
+        "typedef struct {",
+        "    item_type type;",
+        "    LevelSolid rect;",
+        "} LevelItem;", "",
         "typedef struct {",
         "    LevelID id;", "    uint16_t width;", "    uint16_t height;",
         "    float spawn_x;", "    float spawn_y;",
         "    const LevelSolid *solids;", "    size_t solid_count;",
         "   LevelSolid goal;",
         "   uint8_t has_goal;",
+        "    const LevelItem *items;",
+        "    size_t item_count;",
         "} LevelDefinition;", "",
         "const LevelDefinition *level_get(LevelID id);",
         "const LevelDefinition *level_get_next(LevelID id);",
@@ -138,6 +163,17 @@ def generate(levels):
                 source.append(f"    {{{x}, {y}, {w}, {h}}},")
             source += ["};", ""]
 
+    for level in levels:
+        items = level.get("items", [])
+        if items:
+            source.append(f"static const LevelItem level_{level['id']}_items[] = {{")
+            for item in items:
+                x, y, w, h = item["rect"]
+                source.append(
+                    f"    {{ITEM_TYPE_{item['type'].upper()}, {{{x}, {y}, {w}, {h}}}}},"
+                )
+            source += ["};", ""]
+
     source.append("static const LevelDefinition levels[] = {")
 
     for level in levels:
@@ -146,6 +182,14 @@ def generate(levels):
         ptr, count = (
             (arr, f"ARRAY_COUNT({arr})")
             if level["solids"]
+            else ("NULL", "0u")
+        )
+
+        items = level.get("items", [])
+        item_arr = f"level_{level['id']}_items"
+        item_ptr, item_count = (
+            (item_arr, f"ARRAY_COUNT({item_arr})")
+            if items
             else ("NULL", "0u")
         )
 
@@ -165,7 +209,7 @@ def generate(levels):
             f"{level['spawn'][0]}.0f, "
             f"{level['spawn'][1]}.0f, "
             f"{ptr}, {count}, "
-            f"{goal_data}, {has_goal}}},"
+            f"{goal_data}, {has_goal}, {item_ptr}, {item_count}}},"
         )
 
     source += [

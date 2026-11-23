@@ -272,52 +272,58 @@ void main(void){
 			);
 			player_entity.grounded = contacts.grounded;
 
-			if(player_object.x < PLAYER_MIN_X){
-				player_object.x = PLAYER_MIN_X;
-				if(player_physics.velocity_x < 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
-			}
-			
 			float max_player_x = (float)active_level->width - player_object.width;
-			if(max_player_x < 0.0f){
-				max_player_x = 0.0f;
+
+			if(max_player_x < PLAYER_MIN_X){
+			    max_player_x = PLAYER_MIN_X;
 			}
-			if(player_object.x < 0.0f){
-				player_object.x = 0.0f;
-				if(player_physics.velocity_x < 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
+
+			if(player_object.x < PLAYER_MIN_X){
+			    player_object.x = PLAYER_MIN_X;
+			    if(player_physics.velocity_x < 0.0f){
+			        player_physics.velocity_x = 0.0f;
+			    }
 			}
 			else if(player_object.x > max_player_x){
-				player_object.x = max_player_x;
-				if(player_physics.velocity_x > 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
+			    player_object.x = max_player_x;
+			    if(player_physics.velocity_x > 0.0f){
+			        player_physics.velocity_x = 0.0f;
+			    }
 			}
 
 
-			if(
-			    active_level->has_goal != 0u &&
-			    player_object.x <
-			        (float)active_level->goal.x + active_level->goal.width &&
-			    player_object.x + player_object.width >
-			        (float)active_level->goal.x &&
-			    player_object.y <
-			        (float)active_level->goal.y + active_level->goal.height &&
-			    player_object.y + player_object.height >
-			        (float)active_level->goal.y
-			){
-			    const LevelDefinition *next_level = level_get_next(active_level->id);
+			if(active_level->has_goal != 0u){
+			    object goal_object;
+			    collision goal_collision;
 
-			    if(next_level != NULL){
-			        (void)game_load_level(
-			            next_level->id,
-			            &active_level,
-			            &player_entity,
-			            &game_camera,
-			            &snapshot
-			        );
+			    object_init(
+			        &goal_object,
+			        active_level->goal.x,
+			        active_level->goal.y,
+			        active_level->goal.width,
+			        active_level->goal.height,
+			        OBJECT_TYPE_INTERACTIVE
+			    );
+
+			    collision_init(
+			        &goal_collision,
+			        &player_object,
+			        &goal_object
+			    );
+
+			    if(collision_check(&goal_collision)){
+			        const LevelDefinition *next_level =
+			            level_get_next(active_level->id);
+
+			        if(next_level != NULL){
+			            (void)game_load_level(
+			                next_level->id,
+			                &active_level,
+			                &player_entity,
+			                &game_camera,
+			                &snapshot
+			            );
+			        }
 			    }
 			}
 

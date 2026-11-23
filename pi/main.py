@@ -22,7 +22,7 @@ def build_level_scene(renderer, level_id, tivo):
 	renderer.objects.clear()
 
 	renderer.add_object(background)
-	add_level_tiles(renderer, level_id)
+	add_level_tiles(renderer, level)
 
 	goal = level.get("goal")
 
