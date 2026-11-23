@@ -320,6 +320,13 @@ void main(void){
 
 			    if(collision_check(&item_collision)){
 			        collected[i] = 1;
+			        if(item->effect_kind == ITEM_EFFECT_INCREMENT_COUNTER){
+			            switch(item->effect_counter){
+			            case ITEM_COUNTER_LEDS:
+			                player_statistics.LEDs += item->effect_amount;
+			                break;
+			            }
+			        }
 			    }
 			}
 
@@ -401,6 +408,8 @@ void main(void){
 			            (uint8_t)(1u << (i % 8u));
 			    }
 			}
+
+			snapshot.led_count = (uint16_t)player_statistics.LEDs;
 
 			++snapshot.sequence;
 			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){

@@ -6,9 +6,9 @@
 #include "level_data.h"
 
 #define PROTOCOL_MAGIC          0xA5u
-#define PROTOCOL_VERSION        3u
+#define PROTOCOL_VERSION        4u
 #define PROTOCOL_ITEM_BYTES     ((LEVEL_MAX_ITEMS + 7u) / 8u)
-#define PROTOCOL_PACKET_SIZE    (14u + PROTOCOL_ITEM_BYTES)
+#define PROTOCOL_PACKET_SIZE    (14u + PROTOCOL_ITEM_BYTES + 2u)
 
 typedef enum{
     PLAYER_IDLE,
@@ -31,6 +31,7 @@ typedef struct{
     uint8_t facing_direction;
     uint8_t level_id;
     uint8_t collected_items[PROTOCOL_ITEM_BYTES];
+    uint16_t led_count;
 } GameSnapshot;
 
 size_t protocol_encode(const GameSnapshot *snapshot, uint8_t packet[PROTOCOL_PACKET_SIZE]);

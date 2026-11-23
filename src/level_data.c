@@ -19,9 +19,9 @@ static const LevelSolid level_1_solids[] = {
 };
 
 static const LevelItem level_0_items[] = {
-    {ITEM_TYPE_LED, {128, 192, 16, 16}},
-    {ITEM_TYPE_LED, {240, 192, 16, 16}},
-    {ITEM_TYPE_LED, {400, 192, 16, 16}},
+    {ITEM_TYPE_LED, {128, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
+    {ITEM_TYPE_LED, {240, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
+    {ITEM_TYPE_LED, {400, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
 };
 
 static const LevelDefinition levels[] = {

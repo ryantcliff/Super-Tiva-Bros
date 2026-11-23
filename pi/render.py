@@ -64,12 +64,14 @@ class Render:
 		self.objects = []
 		self.camera = Camera()
 		self.clock = None
+		self.hud_font = None
 
 	def __enter__(self):
 		pygame.init()
 		self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 		pygame.display.set_caption("Super Tiva Bros")
 		self.clock = pygame.time.Clock()
+		self.hud_font = pygame.font.Font(None, 18)
 		return self
 
 	def __exit__(self, exception_type, exception, traceback):
@@ -78,7 +80,7 @@ class Render:
 	def add_object(self, game_object):
 		self.objects.append(game_object)
 
-	def draw(self):
+	def draw(self, led_count=0):
 		self.screen.fill((0, 0, 0))
 		objects = sorted(
 			self.objects,
@@ -99,6 +101,8 @@ class Render:
 				sprite.image,
 				(screen_x, screen_y)
 			)
+		label = self.hud_font.render(f"LEDs: {led_count}", True, (255, 255, 255))
+		self.screen.blit(label, (8, 8))
 		pygame.display.flip()
 
 	def tick(self, fps=60):

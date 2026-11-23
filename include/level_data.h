@@ -21,9 +21,20 @@ typedef enum {
     ITEM_TYPE_LED = 0,
 } item_type;
 
+typedef enum {
+    ITEM_EFFECT_INCREMENT_COUNTER,
+} ItemEffectKind;
+
+typedef enum {
+    ITEM_COUNTER_LEDS,
+} ItemCounter;
+
 typedef struct {
     item_type type;
     LevelSolid rect;
+    ItemEffectKind effect_kind;
+    ItemCounter effect_counter;
+    uint16_t effect_amount;
 } LevelItem;
 
 typedef struct {

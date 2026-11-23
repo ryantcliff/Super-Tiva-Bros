@@ -11,10 +11,10 @@ MAX_ITEMS = max(1, *(
     for path in LEVELS_DIR.glob("*.json")
 ))
 ITEM_BYTES = (MAX_ITEMS + 7) // 8
-PACKET_STRUCT = struct.Struct(f"<BBBhhhhBBB{ITEM_BYTES}s")
+PACKET_STRUCT = struct.Struct(f"<BBBhhhhBBB{ITEM_BYTES}sH")
 
 PROTOCOL_MAGIC = 0xA5
-PROTOCOL_VERSION = 0x03
+PROTOCOL_VERSION = 0x04
 
 PLAYER_IDLE = 0
 PLAYER_WALKING = 1
@@ -34,6 +34,7 @@ class GameSnapshot:
 	facing_direction: int
 	level_id: int = 0
 	collected_items: bytes = bytes(ITEM_BYTES)
+	led_count: int = 0
 
 
 def decode_packet(packet: bytes) -> GameSnapshot:
@@ -52,6 +53,7 @@ def decode_packet(packet: bytes) -> GameSnapshot:
         facing_direction,
 	    level_id,
         collected_items,
+        led_count,
     ) = PACKET_STRUCT.unpack(packet)
 
     if magic != PROTOCOL_MAGIC:
@@ -68,6 +70,7 @@ def decode_packet(packet: bytes) -> GameSnapshot:
         camera_y=camera_y,
         player_state=player_state,
         facing_direction=facing_direction,
-	level_id=level_id,
-        collected_items=collected_items
+	    level_id=level_id,
+        collected_items=collected_items,
+        led_count=led_count
     )

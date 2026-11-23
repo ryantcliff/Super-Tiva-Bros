@@ -118,7 +118,7 @@ def main() -> int:
 					snapshot.camera_x,
 					snapshot.camera_y
 				)
-				renderer.draw()
+				renderer.draw(snapshot.led_count)
 				renderer.tick(60)
 
 		except KeyboardInterrupt:

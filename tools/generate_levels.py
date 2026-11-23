@@ -24,9 +24,15 @@ def integer(value, field, minimum, maximum):
     return value
 
 def read_item_types():
-    return json.loads(
+    item_types = json.loads(
         ITEM_TYPES_FILE.read_text(encoding="utf-8")
     )["types"]
+    for name, definition in item_types.items():
+        effect = definition["effect"]
+        if effect["kind"] != "increment_counter" or effect["counter"] != "leds":
+            raise ValueError(f"Unsupported item effect: {name}")
+        integer(effect["amount"], f"{name}: effect amount", 1, 65535)
+    return item_types
 
 def read_levels():
     paths = sorted(LEVELS_DIR.glob("*.json"))
@@ -131,9 +137,18 @@ def generate(levels):
         header.append(f"    ITEM_TYPE_{name.upper()} = {definition['id']},")
     header += [
         "} item_type;", "",
+        "typedef enum {",
+        "    ITEM_EFFECT_INCREMENT_COUNTER,",
+        "} ItemEffectKind;", "",
+        "typedef enum {",
+        "    ITEM_COUNTER_LEDS,",
+        "} ItemCounter;", "",
         "typedef struct {",
         "    item_type type;",
         "    LevelSolid rect;",
+        "    ItemEffectKind effect_kind;",
+        "    ItemCounter effect_counter;",
+        "    uint16_t effect_amount;",
         "} LevelItem;", "",
         "typedef struct {",
         "    LevelID id;", "    uint16_t width;", "    uint16_t height;",
@@ -169,8 +184,12 @@ def generate(levels):
             source.append(f"static const LevelItem level_{level['id']}_items[] = {{")
             for item in items:
                 x, y, w, h = item["rect"]
+                effect = item_types[item["type"]]["effect"]
                 source.append(
-                    f"    {{ITEM_TYPE_{item['type'].upper()}, {{{x}, {y}, {w}, {h}}}}},"
+                    f"    {{ITEM_TYPE_{item['type'].upper()}, {{{x}, {y}, {w}, {h}}}, "
+                    f"ITEM_EFFECT_{effect['kind'].upper()}, "
+                    f"ITEM_COUNTER_{effect['counter'].upper()}, "
+                    f"{effect['amount']}u}},"
                 )
             source += ["};", ""]
 
