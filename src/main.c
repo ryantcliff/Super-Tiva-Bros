@@ -22,6 +22,7 @@
 #include "protocol.h"
 #include "system.h"
 #include "level_data.h"
+#include <string.h>
 
 #define GAME_UPDATE_HZ		60u
 #define FIXED_DELTA_TIME	(1.0f/60.0f)
@@ -119,6 +120,7 @@ void main(void){
 	input controls;
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
 	uint8_t buttons = 0u;
+	uint8_t collected[LEVEL_MAX_ITEMS] = {0};
 
 	#if DEVELOPMENT_SPI_KEYBOARD_INPUT
 	uint32_t last_spi_input_generation = 0u;
@@ -292,6 +294,35 @@ void main(void){
 			}
 
 
+			for(size_t i = 0; i < active_level->item_count; i++){
+			    if(collected[i]){
+			        continue;
+			    }
+
+			    const LevelItem *item = &active_level->items[i];
+			    object item_object;
+			    collision item_collision;
+
+			    object_init(
+			        &item_object,
+			        item->rect.x,
+			        item->rect.y,
+			        item->rect.width,
+			        item->rect.height,
+			        OBJECT_TYPE_ITEM
+			    );
+
+			    collision_init(
+			        &item_collision,
+			        &player_object,
+			        &item_object
+			    );
+
+			    if(collision_check(&item_collision)){
+			        collected[i] = 1;
+			    }
+			}
+
 			if(active_level->has_goal != 0u){
 			    object goal_object;
 			    collision goal_collision;
@@ -316,13 +347,15 @@ void main(void){
 			            level_get_next(active_level->id);
 
 			        if(next_level != NULL){
-			            (void)game_load_level(
+			            if(game_load_level(
 			                next_level->id,
 			                &active_level,
 			                &player_entity,
 			                &game_camera,
 			                &snapshot
-			            );
+			            )){
+			                memset(collected, 0, sizeof(collected));
+			            }
 			        }
 			    }
 			}
@@ -360,6 +393,14 @@ void main(void){
 			snapshot.camera_y = 0;
 
 			snapshot.level_id = (uint8_t)active_level->id;
+
+			memset(snapshot.collected_items, 0, sizeof(snapshot.collected_items));
+			for(size_t i = 0; i < active_level->item_count; i++){
+			    if(collected[i]){
+			        snapshot.collected_items[i / 8u] |=
+			            (uint8_t)(1u << (i % 8u));
+			    }
+			}
 
 			++snapshot.sequence;
 			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){

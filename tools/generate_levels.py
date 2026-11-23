@@ -235,6 +235,11 @@ def generate(levels):
         "}",
         "",
     ]
+    max_items = max(1, *(len(level.get("items", [])) for level in levels))
+    header.insert(
+        header.index("#endif"),
+        f"#define LEVEL_MAX_ITEMS {max_items}"
+    )
     return "\n".join(header), "\n".join(source)
 
 
