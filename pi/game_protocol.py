@@ -41,7 +41,7 @@ def decode_packet(packet: bytes) -> GameSnapshot:
         camera_y,
         player_state,
         facing_direction,
-	level_id,
+	    level_id,
     ) = PACKET_STRUCT.unpack(packet)
 
     if magic != PROTOCOL_MAGIC:
