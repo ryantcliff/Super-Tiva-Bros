@@ -86,6 +86,8 @@ void main(void){
 		}
 	}
 
+	snapshot.level_id = (uint8_t)active_level->id;
+
 	#if !DEVELOPMENT_SPI_KEYBOARD_INPUT
 	input_controller_init(16000000u);
 	#endif
@@ -274,6 +276,8 @@ void main(void){
 			game_camera.y = 0.0f;
 			snapshot.camera_x = (int16_t)game_camera.x;
 			snapshot.camera_y = 0;
+
+			snapshot.level_id = (uint8_t)active_level->id;
 
 			++snapshot.sequence;
 			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){

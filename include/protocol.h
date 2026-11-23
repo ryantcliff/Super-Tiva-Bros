@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 #define PROTOCOL_MAGIC          0xA5u
-#define PROTOCOL_VERSION        1u
-#define PROTOCOL_PACKET_SIZE    13u     // temporary
+#define PROTOCOL_VERSION        2u
+#define PROTOCOL_PACKET_SIZE    14u     // temporary
 
 typedef enum{
     PLAYER_IDLE,
@@ -27,6 +27,7 @@ typedef struct{
     int16_t camera_y;
     uint8_t player_state;
     uint8_t facing_direction;
+    uint8_t level_id;
 } GameSnapshot;
 
 size_t protocol_encode(const GameSnapshot *snapshot, uint8_t packet[PROTOCOL_PACKET_SIZE]);
