@@ -25,6 +25,8 @@ typedef struct {
     float spawn_y;
     const LevelSolid *solids;
     size_t solid_count;
+   LevelSolid goal;
+   uint8_t has_goal;
 } LevelDefinition;
 
 const LevelDefinition *level_get(LevelID id);

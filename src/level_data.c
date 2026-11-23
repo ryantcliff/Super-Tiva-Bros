@@ -19,8 +19,8 @@ static const LevelSolid level_1_solids[] = {
 };
 
 static const LevelDefinition levels[] = {
-    {LEVEL_ID_START, 512, 224, 100.0f, 192.0f, level_0_solids, ARRAY_COUNT(level_0_solids)},
-    {LEVEL_ID_SECOND, 512, 224, 32.0f, 192.0f, level_1_solids, ARRAY_COUNT(level_1_solids)},
+    {LEVEL_ID_START, 512, 224, 100.0f, 192.0f, level_0_solids, ARRAY_COUNT(level_0_solids), {464, 64, 16, 144}, 1u},
+    {LEVEL_ID_SECOND, 512, 224, 32.0f, 192.0f, level_1_solids, ARRAY_COUNT(level_1_solids), {0, 0, 0, 0}, 0u},
 };
 
 const LevelDefinition *level_get(LevelID id) {

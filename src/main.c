@@ -296,19 +296,29 @@ void main(void){
 				}
 			}
 
-			if(player_object.x >= max_player_x &&
-				input_down(&controls, INPUT_BUTTON_RIGHT) != 0u
+
+			if(
+			    active_level->has_goal != 0u &&
+			    player_object.x <
+			        (float)active_level->goal.x + active_level->goal.width &&
+			    player_object.x + player_object.width >
+			        (float)active_level->goal.x &&
+			    player_object.y <
+			        (float)active_level->goal.y + active_level->goal.height &&
+			    player_object.y + player_object.height >
+			        (float)active_level->goal.y
 			){
-				const LevelDefinition *next_level = level_get_next(active_level->id);
-				if(next_level != NULL){
-					(void)game_load_level(
-						next_level->id,
-						&active_level,
-						&player_entity,
-						&game_camera,
-						&snapshot
-					);
-				}
+			    const LevelDefinition *next_level = level_get_next(active_level->id);
+
+			    if(next_level != NULL){
+			        (void)game_load_level(
+			            next_level->id,
+			            &active_level,
+			            &player_entity,
+			            &game_camera,
+			            &snapshot
+			        );
+			    }
 			}
 
 			snapshot.player_x = (int16_t)player_object.x;
@@ -353,5 +363,4 @@ void main(void){
 			game_accumulator -= 1000u;
 		}
 	}
-
 }
