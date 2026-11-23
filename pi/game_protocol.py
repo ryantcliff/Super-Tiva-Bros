@@ -3,10 +3,10 @@
 import struct
 from dataclasses import dataclass
 
-PACKET_STRUCT = struct.Struct("<BBBhhhhBB")
+PACKET_STRUCT = struct.Struct("<BBBhhhhBBB")
 
 PROTOCOL_MAGIC = 0xA5
-PROTOCOL_VERSION = 0x01
+PROTOCOL_VERSION = 0x02
 
 PLAYER_IDLE = 0
 PLAYER_WALKING = 1
@@ -17,13 +17,14 @@ FACING_RIGHT = 1
 
 @dataclass(frozen=True)
 class GameSnapshot:
-    sequence: int
-    player_x: int
-    player_y: int
-    camera_x: int
-    camera_y: int
-    player_state: int
-    facing_direction: int
+	sequence: int
+	player_x: int
+	player_y: int
+	camera_x: int
+	camera_y: int
+	player_state: int
+	facing_direction: int
+	level_id: int = 0
 
 
 def decode_packet(packet: bytes) -> GameSnapshot:
@@ -40,6 +41,7 @@ def decode_packet(packet: bytes) -> GameSnapshot:
         camera_y,
         player_state,
         facing_direction,
+	level_id,
     ) = PACKET_STRUCT.unpack(packet)
 
     if magic != PROTOCOL_MAGIC:
@@ -56,4 +58,5 @@ def decode_packet(packet: bytes) -> GameSnapshot:
         camera_y=camera_y,
         player_state=player_state,
         facing_direction=facing_direction,
+	level_id=level_id
     )
