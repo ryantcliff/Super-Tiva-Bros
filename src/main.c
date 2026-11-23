@@ -48,6 +48,57 @@
 uint32_t previous_ms;
 uint32_t game_accumulator;
 
+static bool game_load_level(
+	LevelID level_id,
+	const LevelDefinition **active_level,
+	player *player_entity,
+	camera *game_camera,
+	GameSnapshot *snapshot
+){
+	const LevelDefinition *next = level_get(level_id);
+	CollisionContacts contacts;
+
+	if(next == NULL){
+		return false;
+	}
+
+	*active_level = next;
+
+	object_set_position(
+		player_entity->object,
+		next->spawn_x,
+		next->spawn_y
+	);
+
+	physics_set_velocity(
+		player_entity->physics,
+		0.0f,
+		0.0f
+	);
+
+	contacts = collision_move_static(
+		player_entity->object,
+		player_entity->physics,
+		next->solids,
+		next->solid_count,
+		FIXED_DELTA_TIME
+	);
+	
+	player_entity->grounded = contacts.grounded;
+
+	camera_set_position(game_camera, 0.0f, 0.0f);
+
+	snapshot->level_id = (uint8_t)next->id;
+	snapshot->player_x = (int16_t)player_entity->object->x;
+	snapshot->player_y = (int16_t)player_entity->object->y;
+	snapshot->camera_x = 0;
+	snapshot->camera_y = 0;
+	snapshot->player_state = PLAYER_IDLE;
+	snapshot->facing_direction = FACING_RIGHT;
+
+	return true;
+}
+
 void main(void){
 	GameSnapshot snapshot = {
 		.sequence = 0u,
@@ -243,6 +294,20 @@ void main(void){
 				if(player_physics.velocity_x > 0.0f){
 					player_physics.velocity_x = 0.0f;
 				}
+			}
+
+			if(
+				active_level->id == LEVEL_ID_START &&
+				player_object.x >= max_player_x &&
+				input_down(&controls, INPUT_BUTTON_RIGHT) != 0u
+			){
+				(void)game_load_level(
+					LEVEL_ID_SECOND,
+					&active_level,
+					&player_entity,
+					&game_camera,
+					&snapshot
+				);
 			}
 
 			snapshot.player_x = (int16_t)player_object.x;
