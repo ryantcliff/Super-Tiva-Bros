@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from .render import RenderObject
+import json
+from pathlib import Path
 
 class Tile:
 	def __init__(self, image_name, x, y):
@@ -22,28 +24,44 @@ class Level:
 
 TILE_SIZE = 16
 
-LEVEL_VISUALS = {
-	0: [
-		(176, 176, 48, 16),
-		(320, 160, 64, 16),
-		(272, 176, 16, 32),
-	]
+LEVELS_DIR = Path(__file__).resolve().parents[1] / "levels"
+
+SPRITE_TYPES = {
+	"brick": ("block_sprites", 1),
 }
 
+def load_level(level_id):
+	for path in sorted(LEVELS_DIR.glob("*.json")):
+		with path.open("r", encoding="utf-8") as file:
+			data = json.load(file)
+
+		if data["id"] == level_id:
+			return data
+
+	raise ValueError(f"Level {level_id} not found")
+
+
 def add_level_tiles(renderer, level_id):
-	solids = LEVEL_VISUALS.get(level_id)
+	level = load_level(level_id)
+	for solid in level["solids"]:
+		sprite_name = solid.get("sprite")
 
-	if solids is None:
-		raise ValueError(f"Unknown level ID: {level_id}")
+		if sprite_name is None:
+			continue
 
-	for x, y, width, height in solids:
+		if sprit_name not in SPRITE_TYPES:
+			raise ValueError(f"Unknown sprite type: {sprite_name}")
+
+		sprite_folder, sprite_frame = SPRITE_TYPES[sprite_name]
+
+		x, y, width, height = solid["rect"]
 		for tile_y in range(y, y + height, TILE_SIZE):
 			for tile_x in range(x, x + width, TILE_SIZE):
 				block = RenderObject(
-					"block_sprites",
+					sprite_folder,
 					tile_x,
 					tile_y,
 					layer=2
 				)
-				block.set_sprite(1)
+				block.set_sprite(sprite_frame)
 				renderer.add_object(block)

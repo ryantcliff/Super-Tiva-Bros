@@ -5,21 +5,34 @@ from .render import Render, RenderObject
 from .tiva_game_state import TivaGameStateReader
 from .player_view import select_player_sprite
 from .ssh_keyboard_input import SshKeyboardInput
-from .level import add_level_tiles
+from .level import load_level, add_level_tiles
+
+
+def build_level_scene(renderer, level_id, tivo):
+	level = load_level(level_id)
+
+	background = RenderObject(
+		level["background"],
+		0,
+		0,
+		layer=1,
+	)
+	background.set_sprite(level.get("background_frame", 0))
+
+	renderer.objects.clear()
+
+	renderer.add_object(background)
+	add_level)tiles(renderer, level_id)
+
+	renderer.add_object(tivo)
 
 
 def main() -> int:
-	with SshKeyboardInput() as keyboard, TivaGameStateReader() as reader, Render() as renderer:
-		world = RenderObject(
-			"backgrounds",
-			0,
-			0,
-			layer=1
-		)
-		renderer.add_object(world)
-
-		add_level_tiles(renderer, 0)
-
+	with (
+		SshKeyboardInput() as keyboard,
+		TivaGameStateReader() as reader,
+		Render() as renderer
+	):
 		tivo = RenderObject(
             		"tivo_sprites",
             		0,
@@ -27,9 +40,10 @@ def main() -> int:
             		layer=3
         	)
 		tivo.set_sprite(0)
-		renderer.add_object(tivo)
 
+		active_level_id = None
 		running = True
+
 		try:
 			while running and keyboard.running:
 				for event in pygame.event.get():
@@ -48,6 +62,15 @@ def main() -> int:
 				if not keyboard.running:
 					break
 				snapshot = reader.poll(buttons)
+
+				if snapshot.level_id != active_level_id:
+					build_level_scene(
+						renderer,
+						snapshot.level_id,
+						tivo,
+					)
+					active_level_id = snapshot.level_id
+					print(f"Loaded level {active_level_id}")
 
 				tivo.set_position(
 					snapshot.player_x,

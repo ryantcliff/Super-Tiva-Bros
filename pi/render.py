@@ -78,6 +78,7 @@ class Render:
 		self.objects.append(game_object)
 
 	def draw(self):
+		self.screen.fill((0, 0, 0))
 		objects = sorted(
 			self.objects,
 			key=lambda obj: obj.layer
