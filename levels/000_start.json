@@ -12,7 +12,7 @@
     "rect": [464, 64, 16, 144]
   },
   "solids": [
-    {"rect": [0, 208, 512, 16], "sprite": null},
+    {"rect": [0, 208, 512, 16], "sprite": "ground"},
     {"rect": [176, 176, 48, 16], "sprite": "brick"},
     {"rect": [320, 160, 64, 16], "sprite": "brick"},
     {"rect": [272, 176, 16, 32], "sprite": "brick"}

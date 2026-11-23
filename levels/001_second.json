@@ -11,7 +11,7 @@
   "solids": [
     {
       "rect": [0, 208, 512, 16],
-      "sprite": null
+      "sprite": "ground"
     },
     {
       "rect": [96, 160, 48, 16],

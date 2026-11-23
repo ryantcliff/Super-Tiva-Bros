@@ -28,6 +28,7 @@ LEVELS_DIR = Path(__file__).resolve().parents[1] / "levels"
 
 SPRITE_TYPES = {
 	"brick": ("block_sprites", 1),
+	"ground": ("block_sprites", 0),
 }
 
 def load_level(level_id):
