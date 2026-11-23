@@ -1,0 +1,33 @@
+
+{
+  "id": 1,
+  "symbol": "SECOND",
+  "name": "World 1-2",
+  "width": 512,
+  "height": 224,
+  "spawn": [32, 192],
+  "background": "backgrounds",
+  "background_frame": 0,
+  "solids": [
+    {
+      "rect": [0, 208, 512, 16],
+      "sprite": null
+    },
+    {
+      "rect": [96, 160, 48, 16],
+      "sprite": "brick"
+    },
+    {
+      "rect": [224, 144, 64, 16],
+      "sprite": "brick"
+    },
+    {
+      "rect": [368, 176, 16, 32],
+      "sprite": "brick"
+    },
+    {
+      "rect": [416, 160, 48, 16],
+      "sprite": "brick"
+    }
+  ]
+}

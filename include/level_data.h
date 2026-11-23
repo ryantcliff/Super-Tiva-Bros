@@ -7,6 +7,7 @@
 
 typedef enum {
     LEVEL_ID_START = 0,
+    LEVEL_ID_SECOND = 1,
 } LevelID;
 
 typedef struct {
