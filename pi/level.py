@@ -49,7 +49,7 @@ def add_level_tiles(renderer, level_id):
 		if sprite_name is None:
 			continue
 
-		if sprit_name not in SPRITE_TYPES:
+		if sprite_name not in SPRITE_TYPES:
 			raise ValueError(f"Unknown sprite type: {sprite_name}")
 
 		sprite_folder, sprite_frame = SPRITE_TYPES[sprite_name]
