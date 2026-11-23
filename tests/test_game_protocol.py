@@ -23,6 +23,7 @@ class GameProtocolTests(unittest.TestCase):
         self.assertEqual(snapshot.camera_y, 256)
         self.assertEqual(snapshot.player_state, 1)
         self.assertEqual(snapshot.facing_direction, 1)
+        self.assertEqual(snapshot.level_id, 0x07)
 
     def test_rejects_incorrect_packet_length(self):
         short_packet = bytes(12)
@@ -44,12 +45,13 @@ class GameProtocolTests(unittest.TestCase):
 
     def test_rejects_unsupported_version(self):
         packet = bytes([
-            0xA5, 0x01, 0x07,
+            0xA5, 0x03, 0x07,
             0x34, 0x12,
             0xFE, 0xFF,
             0x00, 0x00,
             0x00, 0x01,
             0x01, 0x01,
+            0x07
         ])
         with self.assertRaisesRegex(ValueError, "version"):
             decode_packet(packet)
