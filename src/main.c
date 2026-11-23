@@ -21,6 +21,7 @@
 #include "tick.h"
 #include "protocol.h"
 #include "system.h"
+#include "level_data.h"
 
 #define GAME_UPDATE_HZ		60u
 #define FIXED_DELTA_TIME	(1.0f/60.0f)
@@ -31,12 +32,12 @@
 
 #define SPI_INPUT_TIMEOUT_TICKS 6u
 
-#define PLAYER_START_X	100.0f
-#define PLAYER_FLOOR_Y	192.0f
 #define PLAYER_MIN_X	0.0f
-#define PLAYER_MAX_X	220.0f
 #define PLAYER_WIDTH	16
 #define PLAYER_HEIGHT	16
+
+#define SCREEN_WIDTH	256
+#define SCREEN_HEIGHT	224
 
 #define PLAYER_MOVE_SPEED			60.0f
 #define PLAYER_GRAVITY				900.0f
@@ -61,6 +62,9 @@ void main(void){
 	physics player_physics;
 	player_stats player_statistics;
 	player player_entity;
+	camera game_camera;
+	const LevelDefinition *active_level;
+	CollisionContacts contacts;
 	input controls;
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
 	uint8_t buttons = 0u;
@@ -73,14 +77,23 @@ void main(void){
 	system_clock_init();
 	tick_init();
 
+	active_level = level_get(LEVEL_ID_START);
+
+	if(active_level == NULL){
+		while(1){
+			// level entered is invalid
+			// enter infinite loop for safety
+		}
+	}
+
 	#if !DEVELOPMENT_SPI_KEYBOARD_INPUT
 	input_controller_init(16000000u);
 	#endif
 
 	object_init(
 		&player_object,
-		PLAYER_START_X,
-		PLAYER_FLOOR_Y,
+		active_level->spawn_x,
+		active_level->spawn_y,
 		PLAYER_WIDTH,
 		PLAYER_HEIGHT,
 		OBJECT_TYPE_PLAYER
@@ -99,13 +112,32 @@ void main(void){
 		&player_physics,
 		&player_statistics
 	);
-	player_resolve_floor(&player_entity, PLAYER_FLOOR_Y);
+	contacts = collision_move_static(
+		&player_object,
+		&player_physics,
+		active_level->solids,
+		active_level->solid_count,
+		FIXED_DELTA_TIME
+	);
+	
+	player_entity.grounded = contacts.grounded;
+
+	camera_init(
+		&game_camera,
+		0.0f,
+		0.0f,
+		SCREEN_WIDTH,
+		SCREEN_HEIGHT
+	);
 
 	#if DEVELOPMENT_SPI_KEYBOARD_INPUT
 	input_init(&controls, KEYBOARD_INPUT);
 	#else
 	input_init(&controls, CONTROLLER_INPUT);
 	#endif
+
+	snapshot.player_x = (int16_t)player_object.x;
+	snapshot.player_y = (int16_t)player_object.y;
 
 	if(protocol_encode(&snapshot, pi_packet) != PROTOCOL_PACKET_SIZE){
 		while(1){}
@@ -178,9 +210,14 @@ void main(void){
 				(void)player_try_jump(&player_entity, PLAYER_JUMP_SPEED);
 			}
 
-			player_update(&player_entity, FIXED_DELTA_TIME);
-
-			player_resolve_floor(&player_entity, PLAYER_FLOOR_Y);
+			contacts = collision_move_static(
+				&player_object,
+				&player_physics,
+				active_level->solids,
+				active_level->solid_count,
+				FIXED_DELTA_TIME
+			);
+			player_entity.grounded = contacts.grounded;
 
 			if(player_object.x < PLAYER_MIN_X){
 				player_object.x = PLAYER_MIN_X;
@@ -188,8 +225,19 @@ void main(void){
 					player_physics.velocity_x = 0.0f;
 				}
 			}
-			else if(player_object.x > PLAYER_MAX_X){
-				player_object.x = PLAYER_MAX_X;
+			
+			float max_player_x = (float)active_level->width - player_object.width;
+			if(max_player_x < 0.0f){
+				max_player_x = 0.0f;
+			}
+			if(player_object.x < 0.0f){
+				player_object.x = 0.0f;
+				if(player_physics.velocity_x < 0.0f){
+					player_physics.velocity_x = 0.0f;
+				}
+			}
+			else if(player_object.x > max_player_x){
+				player_object.x = max_player_x;
 				if(player_physics.velocity_x > 0.0f){
 					player_physics.velocity_x = 0.0f;
 				}
@@ -208,12 +256,25 @@ void main(void){
 				snapshot.player_state = PLAYER_IDLE;
 			}
 
-
-
 			// update physics / game
 
 			// update camera
-		
+			camera_follow(&game_camera, &player_object);
+			float max_camera_x = (float)active_level->width - SCREEN_WIDTH;
+
+			if(max_camera_x < 0.0f){
+				max_camera_x = 0.0f;
+			}
+			if(game_camera.x < 0.0f){
+				game_camera.x = 0.0f;
+			}
+			else if(game_camera.x > max_camera_x){
+				game_camera.x = max_camera_x;
+			}
+			game_camera.y = 0.0f;
+			snapshot.camera_x = (int16_t)game_camera.x;
+			snapshot.camera_y = 0;
+
 			++snapshot.sequence;
 			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){
 				(void)spi_slave_publish(pi_packet);

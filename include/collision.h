@@ -19,4 +19,23 @@ void collision_init(struct collision *c, struct object *object1,
  * objects, and self-collisions do not count as overlaps. */
 bool collision_check(const struct collision *c);
 
+#include <stddef.h>
+#include "physics.h"
+#include "level_data.h"
+
+typedef struct{
+    bool grounded;
+    bool hit_ceiling;
+    bool hit_left;
+    bool hit_right;
+} CollisionContacts;
+
+CollisionContacts collision_move_static(
+    object *body,
+    physics *motion,
+    const LevelSolid *solids,
+    size_t solid_count,
+    float delta_time
+);
+
 #endif
