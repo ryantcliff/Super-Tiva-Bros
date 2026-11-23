@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
 import pygame
+import json
+from pathlib import Path
 from .render import Render, RenderObject
 from .tiva_game_state import TivaGameStateReader
 from .player_view import select_player_sprite
 from .ssh_keyboard_input import SshKeyboardInput
 from .level import load_level, add_level_tiles
+
+ITEM_TYPES = json.loads(
+    (Path(__file__).resolve().parents[1] / "config" / "item_types.json")
+    .read_text(encoding="utf-8")
+)["types"]
 
 
 def build_level_scene(renderer, level_id, tivo):
@@ -22,7 +29,7 @@ def build_level_scene(renderer, level_id, tivo):
 	renderer.objects.clear()
 
 	renderer.add_object(background)
-	add_level_tiles(renderer, level_id)
+	add_level_tiles(renderer, level)
 
 	goal = level.get("goal")
 
@@ -38,7 +45,17 @@ def build_level_scene(renderer, level_id, tivo):
 		flagpole.set_sprite(3)
 		renderer.add_object(flagpole)
 
+	item_objects = []
+	for item in level.get("items", []):
+		x, y, _, _ = item["rect"]
+		sprite_info = ITEM_TYPES[item["type"]]["sprite"]
+		item_object = RenderObject(sprite_info["folder"], x, y, layer=2)
+		item_object.set_sprite(sprite_info["frame"])
+		renderer.add_object(item_object)
+		item_objects.append(item_object)
+
 	renderer.add_object(tivo)
+	return item_objects
 
 
 def main() -> int:
@@ -56,6 +73,7 @@ def main() -> int:
 		tivo.set_sprite(0)
 
 		active_level_id = None
+		item_objects = []
 		running = True
 
 		try:
@@ -78,13 +96,18 @@ def main() -> int:
 				snapshot = reader.poll(buttons)
 
 				if snapshot.level_id != active_level_id:
-					build_level_scene(
+					item_objects = build_level_scene(
 						renderer,
 						snapshot.level_id,
 						tivo,
 					)
 					active_level_id = snapshot.level_id
 					print(f"Loaded level {active_level_id}")
+
+				for i, item in enumerate(item_objects):
+					item.visible = not bool(
+						snapshot.collected_items[i // 8] & (1 << (i % 8))
+					)
 
 				tivo.set_position(
 					snapshot.player_x,

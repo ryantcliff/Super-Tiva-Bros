@@ -21,6 +21,7 @@ class RenderObject:
 		self.layer = layer
 		self.sprites = []
 		self.current_sprite = 0
+		self.visible = True
 
 		object_dir = ASSET_DIR / name
 		for sprite_file in sorted(object_dir.iterdir()):
@@ -85,6 +86,8 @@ class Render:
 		)
 
 		for game_object in objects:
+			if not game_object.visible:
+				continue
 			sprite = game_object.get_sprite()
 			screen_x, screen_y = (
 				self.camera.world_to_screen(

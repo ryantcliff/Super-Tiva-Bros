@@ -22,6 +22,7 @@
 #include "protocol.h"
 #include "system.h"
 #include "level_data.h"
+#include <string.h>
 
 #define GAME_UPDATE_HZ		60u
 #define FIXED_DELTA_TIME	(1.0f/60.0f)
@@ -119,6 +120,7 @@ void main(void){
 	input controls;
 	uint8_t pi_packet[PROTOCOL_PACKET_SIZE];
 	uint8_t buttons = 0u;
+	uint8_t collected[LEVEL_MAX_ITEMS] = {0};
 
 	#if DEVELOPMENT_SPI_KEYBOARD_INPUT
 	uint32_t last_spi_input_generation = 0u;
@@ -272,52 +274,89 @@ void main(void){
 			);
 			player_entity.grounded = contacts.grounded;
 
-			if(player_object.x < PLAYER_MIN_X){
-				player_object.x = PLAYER_MIN_X;
-				if(player_physics.velocity_x < 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
-			}
-			
 			float max_player_x = (float)active_level->width - player_object.width;
-			if(max_player_x < 0.0f){
-				max_player_x = 0.0f;
+
+			if(max_player_x < PLAYER_MIN_X){
+			    max_player_x = PLAYER_MIN_X;
 			}
-			if(player_object.x < 0.0f){
-				player_object.x = 0.0f;
-				if(player_physics.velocity_x < 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
+
+			if(player_object.x < PLAYER_MIN_X){
+			    player_object.x = PLAYER_MIN_X;
+			    if(player_physics.velocity_x < 0.0f){
+			        player_physics.velocity_x = 0.0f;
+			    }
 			}
 			else if(player_object.x > max_player_x){
-				player_object.x = max_player_x;
-				if(player_physics.velocity_x > 0.0f){
-					player_physics.velocity_x = 0.0f;
-				}
+			    player_object.x = max_player_x;
+			    if(player_physics.velocity_x > 0.0f){
+			        player_physics.velocity_x = 0.0f;
+			    }
 			}
 
 
-			if(
-			    active_level->has_goal != 0u &&
-			    player_object.x <
-			        (float)active_level->goal.x + active_level->goal.width &&
-			    player_object.x + player_object.width >
-			        (float)active_level->goal.x &&
-			    player_object.y <
-			        (float)active_level->goal.y + active_level->goal.height &&
-			    player_object.y + player_object.height >
-			        (float)active_level->goal.y
-			){
-			    const LevelDefinition *next_level = level_get_next(active_level->id);
+			for(size_t i = 0; i < active_level->item_count; i++){
+			    if(collected[i]){
+			        continue;
+			    }
 
-			    if(next_level != NULL){
-			        (void)game_load_level(
-			            next_level->id,
-			            &active_level,
-			            &player_entity,
-			            &game_camera,
-			            &snapshot
-			        );
+			    const LevelItem *item = &active_level->items[i];
+			    object item_object;
+			    collision item_collision;
+
+			    object_init(
+			        &item_object,
+			        item->rect.x,
+			        item->rect.y,
+			        item->rect.width,
+			        item->rect.height,
+			        OBJECT_TYPE_ITEM
+			    );
+
+			    collision_init(
+			        &item_collision,
+			        &player_object,
+			        &item_object
+			    );
+
+			    if(collision_check(&item_collision)){
+			        collected[i] = 1;
+			    }
+			}
+
+			if(active_level->has_goal != 0u){
+			    object goal_object;
+			    collision goal_collision;
+
+			    object_init(
+			        &goal_object,
+			        active_level->goal.x,
+			        active_level->goal.y,
+			        active_level->goal.width,
+			        active_level->goal.height,
+			        OBJECT_TYPE_INTERACTIVE
+			    );
+
+			    collision_init(
+			        &goal_collision,
+			        &player_object,
+			        &goal_object
+			    );
+
+			    if(collision_check(&goal_collision)){
+			        const LevelDefinition *next_level =
+			            level_get_next(active_level->id);
+
+			        if(next_level != NULL){
+			            if(game_load_level(
+			                next_level->id,
+			                &active_level,
+			                &player_entity,
+			                &game_camera,
+			                &snapshot
+			            )){
+			                memset(collected, 0, sizeof(collected));
+			            }
+			        }
 			    }
 			}
 
@@ -354,6 +393,14 @@ void main(void){
 			snapshot.camera_y = 0;
 
 			snapshot.level_id = (uint8_t)active_level->id;
+
+			memset(snapshot.collected_items, 0, sizeof(snapshot.collected_items));
+			for(size_t i = 0; i < active_level->item_count; i++){
+			    if(collected[i]){
+			        snapshot.collected_items[i / 8u] |=
+			            (uint8_t)(1u << (i % 8u));
+			    }
+			}
 
 			++snapshot.sequence;
 			if(protocol_encode(&snapshot, pi_packet) == PROTOCOL_PACKET_SIZE){

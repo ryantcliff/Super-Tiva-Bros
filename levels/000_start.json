@@ -11,6 +11,11 @@
     "type": "flagpole",
     "rect": [464, 64, 16, 144]
   },
+  "items": [
+    {"type": "led", "rect": [128, 192, 16, 16]},
+    {"type": "led", "rect": [240, 192, 16, 16]},
+    {"type": "led", "rect": [400, 192, 16, 16]}
+  ],
   "solids": [
     {"rect": [0, 208, 512, 16], "sprite": null},
     {"rect": [176, 176, 48, 16], "sprite": "brick"},
