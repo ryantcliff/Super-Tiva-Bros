@@ -7,6 +7,10 @@
   "spawn": [100, 192],
   "background": "backgrounds",
   "background_frame": 0,
+  "goal": {
+    "type": "flagpole",
+    "rect": [464, 64, 16, 144]
+  },
   "solids": [
     {"rect": [0, 208, 512, 16], "sprite": null},
     {"rect": [176, 176, 48, 16], "sprite": "brick"},

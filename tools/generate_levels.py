@@ -71,6 +71,28 @@ def read_levels():
         if not isinstance(data.get("background"), str) or not data["background"]:
             raise ValueError(f"{path.name}: background folder required")
         integer(data.get("background_frame", 0), f"{path.name}: background frame", 0, 255)
+        goal = data.get("goal")
+
+        if goal is not None:
+            if not isinstance(goal, dict):
+                raise ValueError(f"{path.name}: goal must be an object")
+
+            if goal.get("type") != "flagpole":
+                raise ValueError(f"{path.name}: unsupported goal type")
+
+            rect = goal.get("rect")
+
+            if not isinstance(rect, list) or len(rect) != 4:
+                raise ValueError(f"{path.name}: goal needs rect [x, y, w, h]")
+
+            gx = integer(rect[0], "goal x", 0, width - 1)
+            gy = integer(rect[1], "goal y", 0, height - 1)
+            gw = integer(rect[2], "goal width", 1, width)
+            gh = integer(rect[3], "goal height", 1, height)
+
+            if gx + gw > width or gy + gh > height:
+                raise ValueError(f"{path.name}: goal extends outside level")
+
         levels.append(data)
     return sorted(levels, key=lambda item: item["id"])
 
@@ -94,6 +116,8 @@ def generate(levels):
         "    LevelID id;", "    uint16_t width;", "    uint16_t height;",
         "    float spawn_x;", "    float spawn_y;",
         "    const LevelSolid *solids;", "    size_t solid_count;",
+        "   LevelSolid goal;",
+        "   uint8_t has_goal;",
         "} LevelDefinition;", "",
         "const LevelDefinition *level_get(LevelID id);",
         "const LevelDefinition *level_get_next(LevelID id);",
@@ -115,13 +139,35 @@ def generate(levels):
             source += ["};", ""]
 
     source.append("static const LevelDefinition levels[] = {")
+
     for level in levels:
         arr = f"level_{level['id']}_solids"
-        ptr, count = (arr, f"ARRAY_COUNT({arr})") if level["solids"] else ("NULL", "0u")
-        source.append(
-            f"    {{LEVEL_ID_{level['symbol']}, {level['width']}, {level['height']}, "
-            f"{level['spawn'][0]}.0f, {level['spawn'][1]}.0f, {ptr}, {count}}},"
+
+        ptr, count = (
+            (arr, f"ARRAY_COUNT({arr})")
+            if level["solids"]
+            else ("NULL", "0u")
         )
+
+        goal = level.get("goal")
+
+        if goal is not None:
+            gx, gy, gw, gh = goal["rect"]
+            goal_data = f"{{{gx}, {gy}, {gw}, {gh}}}"
+            has_goal = "1u"
+        else:
+            goal_data = "{0, 0, 0, 0}"
+            has_goal = "0u"
+
+        source.append(
+            f"    {{LEVEL_ID_{level['symbol']}, "
+            f"{level['width']}, {level['height']}, "
+            f"{level['spawn'][0]}.0f, "
+            f"{level['spawn'][1]}.0f, "
+            f"{ptr}, {count}, "
+            f"{goal_data}, {has_goal}}},"
+        )
+
     source += [
         "};", "",
         "const LevelDefinition *level_get(LevelID id) {",

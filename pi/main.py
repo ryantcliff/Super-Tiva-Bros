@@ -24,6 +24,20 @@ def build_level_scene(renderer, level_id, tivo):
 	renderer.add_object(background)
 	add_level_tiles(renderer, level_id)
 
+	goal = level.get("goal")
+
+	if goal is not None and goal["type"] == "flagpole":
+		gx, gy, _, _ = goal["rect"]
+
+		flagpole = RenderObject(
+			"interactable_sprites",
+			gx,
+			gy,
+			layer=2,
+		)
+		flagpole.set_sprite(3)
+		renderer.add_object(flagpole)
+
 	renderer.add_object(tivo)
 
 
