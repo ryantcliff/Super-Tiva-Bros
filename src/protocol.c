@@ -31,6 +31,8 @@ size_t protocol_encode(
     // player flags
     packet[11] = snapshot->player_state;
     packet[12] = snapshot->facing_direction;
+    
+    packet[13] = snapshot->level_id;
 
     // todo: enemies and other stuff
     
