@@ -28,5 +28,6 @@ typedef struct {
 } LevelDefinition;
 
 const LevelDefinition *level_get(LevelID id);
+const LevelDefinition *level_get_next(LevelID id);
 
 #endif
