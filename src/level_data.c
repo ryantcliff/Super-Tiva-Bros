@@ -8,9 +8,6 @@ static const LevelSolid level_0_solids[] = {
     {176, 176, 48, 16},
     {320, 160, 64, 16},
     {272, 176, 16, 32},
-    {128, 144, 16, 16},
-    {240, 144, 16, 16},
-    {352, 96, 16, 16},
 };
 
 static const LevelSolid level_1_solids[] = {

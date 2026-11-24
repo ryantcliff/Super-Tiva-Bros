@@ -25,13 +25,14 @@ SCROLL_SPEED = 4
 
 def main() -> int:
     level_id = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    level_width = load_level(level_id)["width"]
+    level = load_level(level_id)
+    level_width = level["width"]
     max_camera_x = max(0, level_width - SCREEN_WIDTH)
 
     with Render() as renderer:
         pygame.display.set_caption(f"Level {level_id} preview")
         renderer.add_object(RenderObject("backgrounds", 0, 0, layer=1))
-        add_level_tiles(renderer, level_id)
+        add_level_tiles(renderer, level)
 
         camera_x = 0
         running = True
