@@ -64,9 +64,9 @@ def read_levels():
             if x+w > width or y+h > height:
                 raise ValueError(f"{path.name}: solid {i} extends outside level")
             sprite = solid.get("sprite")
-            if sprite not in (None, "brick", "ground"):
+            if sprite not in (None, "brick", "ground", "question_block"):
                 raise ValueError(f"{path.name}: unsupported sprite '{sprite}' (add renderer mapping first)")
-            if sprite in ("brick", "ground") and (w % 16 or h % 16):
+            if sprite in ("brick", "ground", "question_block") and (w % 16 or h % 16):
                 raise ValueError(f"{path.name}: {sprite} dimensions must be multiples of 16")
         if not isinstance(data.get("background"), str) or not data["background"]:
             raise ValueError(f"{path.name}: background folder required")

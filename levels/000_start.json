@@ -15,6 +15,9 @@
     {"rect": [0, 208, 512, 16], "sprite": "ground"},
     {"rect": [176, 176, 48, 16], "sprite": "brick"},
     {"rect": [320, 160, 64, 16], "sprite": "brick"},
-    {"rect": [272, 176, 16, 32], "sprite": "brick"}
+    {"rect": [272, 176, 16, 32], "sprite": "brick"},
+    {"rect": [128, 144, 16, 16], "sprite": "question_block"},
+    {"rect": [240, 144, 16, 16], "sprite": "question_block"},
+    {"rect": [352, 96, 16, 16], "sprite": "question_block"}
   ]
 }

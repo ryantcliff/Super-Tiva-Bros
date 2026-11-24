@@ -18,6 +18,10 @@
       "sprite": "brick"
     },
     {
+      "rect": [112, 160, 16, 16],
+      "sprite": "question_block"
+    },
+    {
       "rect": [224, 144, 64, 16],
       "sprite": "brick"
     },
