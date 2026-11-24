@@ -3,7 +3,7 @@
 import importlib.util
 import unittest
 
-from pi.game_protocol import GameSnapshot, PACKET_STRUCT
+from pi.game_protocol import GameSnapshot, PACKET_STRUCT, ITEM_BYTES
 
 class FakeSpiDevice:
     def __init__(self, response):
@@ -44,14 +44,14 @@ class TivaGameStateTests(unittest.TestCase):
 
     def test_poll_requests_and_decodes_complete_packet(self):
         spi = FakeSpiDevice([
-            0xA5, 0x02, 0x07,
+            0xA5, 0x04, 0x07,
             0x64, 0x00,
             0x96, 0x00,
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x01,
-            0x00
-        ])
+            0x00, 0x05
+        ] + [0x00] * (ITEM_BYTES - 1) + [0x90, 0x01])
 
         reader_class = self.reader_class()
 
@@ -70,19 +70,21 @@ class TivaGameStateTests(unittest.TestCase):
                 player_state=0,
                 facing_direction=1,
                 level_id=0,
+                collected_items=bytes([0x05]) + bytes(ITEM_BYTES - 1),
+                led_count=400,
             ),
         )
 
     def test_poll_repeats_button_mask_across_transfer(self):
         spi = FakeSpiDevice([
-            0xA5, 0x02, 0x07,
+            0xA5, 0x04, 0x07,
             0x64, 0x00,
             0x96, 0x00,
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x01,
             0x00
-        ])
+        ] + [0x00] * ITEM_BYTES + [0x00, 0x00])
         reader_class = self.reader_class()
         with reader_class(spi_factory=lambda: spi) as reader:
             reader.poll(0x40)
@@ -91,14 +93,14 @@ class TivaGameStateTests(unittest.TestCase):
 
     def test_poll_masks_buttons_to_one_byte(self):
         spi = FakeSpiDevice([
-            0xA5, 0x02, 0x07,
+            0xA5, 0x04, 0x07,
             0x64, 0x00,
             0x96, 0x00,
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x01,
             0x00
-        ])
+        ] + [0x00] * ITEM_BYTES + [0x00, 0x00])
         reader_class = self.reader_class()
         with reader_class(spi_factory=lambda: spi) as reader:
             reader.poll(0x140)
@@ -109,14 +111,14 @@ class TivaGameStateTests(unittest.TestCase):
 
     def test_exit_sends_neutral_before_closing(self):
         spi = FakeSpiDevice([
-            0xA5, 0x02, 0x07,
+            0xA5, 0x04, 0x07,
             0x64, 0x00,
             0x96, 0x00,
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x01,
             0x00
-        ])
+        ] + [0x00] * ITEM_BYTES + [0x00, 0x00])
         reader_class = self.reader_class()
         with reader_class(spi_factory=lambda: spi) as reader:
             reader.poll(0x40)
@@ -131,14 +133,14 @@ class TivaGameStateTests(unittest.TestCase):
 
     def test_exit_still_closes_when_neutral_transfer_fails(self):
         spi = NeutralTransferFailingSpiDevice([
-            0xA5, 0x02, 0x07,
+            0xA5, 0x04, 0x07,
             0x64, 0x00,
             0x96, 0x00,
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x01,
             0x00
-        ])
+        ] + [0x00] * ITEM_BYTES + [0x00, 0x00])
         reader_class = self.reader_class()
         with reader_class(spi_factory=lambda: spi) as reader:
             reader.poll(0x40)

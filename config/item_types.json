@@ -1,0 +1,18 @@
+{
+    "schema_version": 1,
+    "types": {
+        "led": {
+            "id": 0,
+            "sprite": {
+                "folder": "item_sprites",
+                "frame": 1
+            },
+            "hitbox": [16, 16],
+            "effect": {
+                "kind": "increment_counter",
+                "counter": "leds",
+                "amount": 1
+            }
+        }
+    }
+}

@@ -13,18 +13,21 @@ int main(void){
         .player_state = PLAYER_WALKING,
         .facing_direction = FACING_RIGHT,
         .level_id = 7u,
+        .collected_items = {0x05u},
+        .led_count = 300u,
     };
 
     uint8_t packet[PROTOCOL_PACKET_SIZE] = {0};
 
     const uint8_t expected[PROTOCOL_PACKET_SIZE] = {
-        0xA5, 0x02, 0x07,
+        0xA5, 0x04, 0x07,
         0x34, 0x12,
         0xFE, 0xFF,
         0x00, 0x00,
         0x00, 0x01,
         0x01, 0x01,
-        0x07
+        0x07, 0x05,
+        0x2C, 0x01
     };
     size_t encoded_size = protocol_encode(&snapshot, packet);
 

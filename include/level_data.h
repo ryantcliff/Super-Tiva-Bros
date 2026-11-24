@@ -17,6 +17,26 @@ typedef struct {
     uint16_t height;
 } LevelSolid;
 
+typedef enum {
+    ITEM_TYPE_LED = 0,
+} item_type;
+
+typedef enum {
+    ITEM_EFFECT_INCREMENT_COUNTER,
+} ItemEffectKind;
+
+typedef enum {
+    ITEM_COUNTER_LEDS,
+} ItemCounter;
+
+typedef struct {
+    item_type type;
+    LevelSolid rect;
+    ItemEffectKind effect_kind;
+    ItemCounter effect_counter;
+    uint16_t effect_amount;
+} LevelItem;
+
 typedef struct {
     LevelID id;
     uint16_t width;
@@ -27,9 +47,12 @@ typedef struct {
     size_t solid_count;
    LevelSolid goal;
    uint8_t has_goal;
+    const LevelItem *items;
+    size_t item_count;
 } LevelDefinition;
 
 const LevelDefinition *level_get(LevelID id);
 const LevelDefinition *level_get_next(LevelID id);
 
+#define LEVEL_MAX_ITEMS 3
 #endif

@@ -22,9 +22,15 @@ static const LevelSolid level_1_solids[] = {
     {416, 160, 48, 16},
 };
 
+static const LevelItem level_0_items[] = {
+    {ITEM_TYPE_LED, {128, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
+    {ITEM_TYPE_LED, {240, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
+    {ITEM_TYPE_LED, {400, 192, 16, 16}, ITEM_EFFECT_INCREMENT_COUNTER, ITEM_COUNTER_LEDS, 1u},
+};
+
 static const LevelDefinition levels[] = {
-    {LEVEL_ID_START, 512, 224, 100.0f, 192.0f, level_0_solids, ARRAY_COUNT(level_0_solids), {464, 64, 16, 144}, 1u},
-    {LEVEL_ID_SECOND, 512, 224, 32.0f, 192.0f, level_1_solids, ARRAY_COUNT(level_1_solids), {0, 0, 0, 0}, 0u},
+    {LEVEL_ID_START, 512, 224, 100.0f, 192.0f, level_0_solids, ARRAY_COUNT(level_0_solids), {464, 64, 16, 144}, 1u, level_0_items, ARRAY_COUNT(level_0_items)},
+    {LEVEL_ID_SECOND, 512, 224, 32.0f, 192.0f, level_1_solids, ARRAY_COUNT(level_1_solids), {0, 0, 0, 0}, 0u, NULL, 0u},
 };
 
 const LevelDefinition *level_get(LevelID id) {

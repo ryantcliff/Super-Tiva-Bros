@@ -43,8 +43,7 @@ def load_level(level_id):
 	raise ValueError(f"Level {level_id} not found")
 
 
-def add_level_tiles(renderer, level_id):
-	level = load_level(level_id)
+def add_level_tiles(renderer, level):
 	for solid in level["solids"]:
 		sprite_name = solid.get("sprite")
 

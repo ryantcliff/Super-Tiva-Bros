@@ -34,6 +34,12 @@ size_t protocol_encode(
     
     packet[13] = snapshot->level_id;
 
+    for(size_t i = 0u; i < PROTOCOL_ITEM_BYTES; ++i){
+        packet[14u + i] = snapshot->collected_items[i];
+    }
+    packet[14u + PROTOCOL_ITEM_BYTES] = (uint8_t)(snapshot->led_count & 0xFFu);
+    packet[15u + PROTOCOL_ITEM_BYTES] = (uint8_t)(snapshot->led_count >> 8u);
+
     // todo: enemies and other stuff
     
     return PROTOCOL_PACKET_SIZE;
