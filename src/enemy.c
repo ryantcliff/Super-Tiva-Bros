@@ -1,4 +1,6 @@
 #include "enemy.h"
+#include "collision.h"
+#define ENEMY_SPEED 32.0f
 
 void enemy_set_type(struct enemy *e, enemy_type type){
     e->type = type;
@@ -40,10 +42,33 @@ void enemy_init(struct enemy *e, enemy_type type, struct object *obj,
     enemy_set_physics(e, phys);
     enemy_set_stats(e, stats);
     init_enemy_stats(stats, type);
+    e->direction = -1; /* start moving left */
+    e->physics->acceleration_y = 900.0f;
 }
 
-void enemy_update(struct enemy *e, float delta_time){
-    if (e->stats->isAlive){
-        physics_update(e->physics, e->object, delta_time);
+void enemy_update(struct enemy *e, const LevelDefinition *level, float delta_time){
+    if (!e->stats->isAlive){
+        return;
     }
+    if(level==NULL){
+        return;
+    }
+    e->physics->velocity_x = ENEMY_SPEED * e->direction;
+    CollisionContacts contacts = collision_move_static(e->object, e->physics, level->solids, level->solid_count, delta_time);
+    if (contacts.hit_left){
+        e->direction = 1;
+    } else if (contacts.hit_right){
+        e->direction = -1;
+    }
+
+    if (e->object->x <= 0.0f){
+        e->direction = 1;
+    } else if (e->object->x + e->object->width >= level->width){
+        e->direction = -1;
+    }
+
+    if (e->object->y > level->height){
+        e->stats->isAlive = false;
+    }
+
 }

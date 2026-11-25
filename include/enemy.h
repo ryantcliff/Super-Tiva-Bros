@@ -4,12 +4,15 @@
 #include "object.h"
 #include "statistics.h"
 #include "physics.h"
+#include "level_data.h"
+#include <stdint.h>
 
 typedef struct enemy{
     enemy_type type;
     object *object;
     enemy_stats *stats;
     physics *physics;
+    int8_t direction; /* -1 = left, 1 = right */
 } enemy;
 
 void enemy_set_type(struct enemy *e, enemy_type type);
@@ -26,6 +29,6 @@ struct enemy_stats *enemy_get_stats(struct enemy *e);
  * Enemy statistics are reset for the supplied type. No memory is allocated. */
 void enemy_init(struct enemy *e, enemy_type type, struct object *obj,
                 struct physics *phys, struct enemy_stats *stats);
-void enemy_update(struct enemy *e, float delta_time);
+void enemy_update(struct enemy *e, const LevelDefinition *level, float delta_time);
 
 #endif

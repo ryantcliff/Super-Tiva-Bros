@@ -45,7 +45,7 @@ void game_update(game *state, float delta_time){
         item_update(state->items[i], delta_time);
     }
     for (i = 0; i < state->enemy_count; ++i){
-        enemy_update(state->enemies[i], delta_time);
+        enemy_update(state->enemies[i],NULL,delta_time);
     }
     for (i = 0; i < state->projectile_count; ++i){
         projectile_update(state->projectiles[i], delta_time);
